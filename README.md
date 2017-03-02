@@ -3,3 +3,6 @@ Dependable Password Manager (SEC Project)
 
 # Protocol
 ![Protocol](Protocol.jpg)
+
+# Server Architecture
+![Architecture](ServerArchitecture.jpg)
