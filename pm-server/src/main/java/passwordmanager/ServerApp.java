@@ -5,7 +5,7 @@ import java.rmi.registry.*;
 public class ServerApp {
 	public static void main(String args[]){
 		int registryPort = 2020;
-        System.setSecurityManager(new RMISecurityManager());
+        //System.setSecurityManager(new RMISecurityManager());
         System.out.println("Main OK");
         try{
             PMService pmService = new PM();

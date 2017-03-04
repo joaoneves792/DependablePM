@@ -8,22 +8,7 @@ public class PM extends UnicastRemoteObject implements PMService {
 
     public PM() throws RemoteException {}
 
-	public String register() throws  RemoteException {
-    	return "register not implemented";
+	public ServerConnectionInterface connect()throws RemoteException{
+    	return new ServerConnection();
 	}
-
-	public String handshake() throws RemoteException {
-    	return "handshake not implemented";
-	}
-	public String getServerNonce() throws RemoteException {
-		return "getServerNonce not implemented";
-	}
-
-	public String put() throws RemoteException {
-		return "put not implemented";
-	}
-	public String get() throws RemoteException {
-		return "get not implemented";
-	}
-
 }

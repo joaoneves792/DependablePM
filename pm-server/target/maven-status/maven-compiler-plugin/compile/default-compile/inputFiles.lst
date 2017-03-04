@@ -1,0 +1,8 @@
+/home/joao/workspace/DependablePM/pm-server/src/main/java/passwordmanager/exceptions/AuthenticationFailureException.java
+/home/joao/workspace/DependablePM/pm-server/src/main/java/passwordmanager/PMService.java
+/home/joao/workspace/DependablePM/pm-server/src/main/java/passwordmanager/PM.java
+/home/joao/workspace/DependablePM/pm-server/src/main/java/passwordmanager/ServerConnection.java
+/home/joao/workspace/DependablePM/pm-server/src/main/java/passwordmanager/ServerConnectionInterface.java
+/home/joao/workspace/DependablePM/pm-server/src/main/java/passwordmanager/ServerApp.java
+/home/joao/workspace/DependablePM/pm-server/src/main/java/passwordmanager/exceptions/HandshakeFailedException.java
+/home/joao/workspace/DependablePM/pm-server/src/main/java/passwordmanager/PasswordResponse.java

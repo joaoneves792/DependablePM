@@ -1,0 +1,8 @@
+passwordmanager/exceptions/AuthenticationFailureException.class
+passwordmanager/ServerConnection.class
+passwordmanager/ServerConnectionInterface.class
+passwordmanager/PMService.class
+passwordmanager/exceptions/HandshakeFailedException.class
+passwordmanager/PasswordResponse.class
+passwordmanager/PM.class
+passwordmanager/ServerApp.class
