@@ -4,7 +4,7 @@ import java.util.Scanner;
 import java.rmi.RemoteException;
 
 public class PMLibrary {
-    private PMService pm;
+    private ServerConnectionInterface pm;
     private Scanner keyboardSc;
 
     private static final String INIT_REQ = "init";
@@ -15,7 +15,7 @@ public class PMLibrary {
 
 
     public PMLibrary(PMService pmService) throws RemoteException {
-        pm = pmService;
+        pm = pmService.connect();
         keyboardSc = new Scanner(System.in);
     }
 
@@ -44,19 +44,19 @@ public class PMLibrary {
     }
 
     private void register() throws RemoteException {
-        System.out.println(pm.register());
+        //System.out.println(pm.register());
     }
 
     private void save() throws RemoteException {
-        System.out.println(pm.put());
+        //System.out.println(pm.put());
     }
 
     private void retrieve() throws RemoteException {
-        System.out.println(pm.get());
+        //System.out.println(pm.get());
     }
 
     private void close() throws RemoteException {
-        System.out.println("close");
+        //System.out.println("close");
     }
 
 
