@@ -81,7 +81,7 @@ public class Cryptography {
 
     public static byte[] asymmetricCipher(byte[] plainText, Key key)throws FailedToEncryptException{
         try {
-            Cipher cipher = Cipher.getInstance("RSA/NONE/PKCS1Padding");
+            Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
             cipher.init(Cipher.ENCRYPT_MODE, key);
             return cipher.doFinal(plainText);
         }catch(NoSuchAlgorithmException
@@ -95,7 +95,7 @@ public class Cryptography {
 
     public static byte[] asymmetricDecipher(byte[] cipheredData, Key key)throws FailedToDecryptException{
         try {
-            Cipher cipher = Cipher.getInstance("RSA/NONE/PKCS1Padding");
+            Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
             cipher.init(Cipher.DECRYPT_MODE, key);
             return cipher.doFinal(cipheredData);
         } catch (NoSuchAlgorithmException

@@ -17,7 +17,7 @@ import java.security.cert.X509Certificate;
 
 public class ServerConnection extends UnicastRemoteObject implements ServerConnectionInterface{
 	private static final int NONCE_SIZE = 4;
-	private static final String KEYSTORE = "DependablePMServer.jks";
+	private static final String KEYSTORE = "DependablePMServer";
 
 	private int _clientNonce;
 	private int _serverNonce;
