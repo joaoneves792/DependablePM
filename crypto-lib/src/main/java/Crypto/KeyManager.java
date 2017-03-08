@@ -17,8 +17,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * Created by joao on 5/4/16.
  */
 public class KeyManager {
-    private static final char[] PASSWORD = "123456".toCharArray();
-    //private static final String CACERT_FILENAME = "cacert.pem";
     private static final String CACERT = "cacert";
     private static final String MYKEY = "mykey";
     private static final String MYCERT = "mycert";
@@ -26,13 +24,15 @@ public class KeyManager {
 
     private static KeyStore _ks;
 
+    private static char[] _password;
+
     private static ConcurrentHashMap<String, X509Certificate> _certCache = new ConcurrentHashMap<>();
 
     private static KeyManager instance = null;
 
 
-    private KeyManager(String keystore, String password){
-        _ks = loadKeystore(keystore, password.toCharArray());
+    private KeyManager(String keystore){
+        _ks = loadKeystore(keystore, _password);
         //initializeCAClient();
         try {
             loadCACertificate();
@@ -53,18 +53,27 @@ public class KeyManager {
     }
 
     public static KeyManager getInstance(String keystore){
-        return getInstance(keystore, new String(PASSWORD));
+        return getInstance(keystore, new String(_password));
     }
 
     public static synchronized KeyManager getInstance(String keystore, String password){
+        _password = password.toCharArray();
         if(null == instance)
             if(null != keystore)
-                instance = new KeyManager(keystore, password);
+                instance = new KeyManager(keystore);
             else
                 instance = new KeyManager();
         else if(null == _ks && null != keystore)
-            _ks = loadKeystore(keystore, password.toCharArray());
+            _ks = loadKeystore(keystore, _password);
         return instance;
+    }
+
+    public static synchronized void close(){
+        for(int i=0; i<_password.length; i++){
+            _password[i] = '0';
+        }
+        _ks = null;
+        instance = null;
     }
 
     private static KeyStore loadKeystore(String name, char[] password){
@@ -86,12 +95,12 @@ public class KeyManager {
     }
 
     public synchronized PrivateKey getPrivateKey(String alias) throws NoSuchAlgorithmException, UnrecoverableEntryException, KeyStoreException{
-        KeyStore.ProtectionParameter protParam = new KeyStore.PasswordProtection(PASSWORD);
+        KeyStore.ProtectionParameter protParam = new KeyStore.PasswordProtection(_password);
         return ((KeyStore.PrivateKeyEntry)(_ks.getEntry(alias, protParam))).getPrivateKey();
     }
 
     public synchronized PrivateKey getMyPrivateKey() throws NoSuchAlgorithmException, UnrecoverableEntryException, KeyStoreException{
-        KeyStore.ProtectionParameter protParam = new KeyStore.PasswordProtection(PASSWORD);
+        KeyStore.ProtectionParameter protParam = new KeyStore.PasswordProtection(_password);
         return ((KeyStore.PrivateKeyEntry)(_ks.getEntry(MYKEY, protParam))).getPrivateKey();
     }
 

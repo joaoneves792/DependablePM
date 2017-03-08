@@ -1,6 +1,7 @@
 package passwordmanager;
 
 import Crypto.Cryptography;
+import Crypto.KeyManager;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -27,6 +28,8 @@ public class ServerConnectionTest {
     private static final String USERNAME = "ist170666";
 
     private static final String CLIENT_KEYSTORE = "Client1";
+    private static final String SERVER_KEYSTORE = "DependablePMServer";
+
 
     private static final int NONCE_SIZE = 4;
 
@@ -62,6 +65,10 @@ public class ServerConnectionTest {
         clientKey = ((KeyStore.PrivateKeyEntry)(ks.getEntry(MYKEY, protParam))).getPrivateKey();
         clientCert = (X509Certificate)ks.getCertificate(MYCERT);
         serverCert = (X509Certificate)ks.getCertificate(SERVERCERT);
+
+        /*HACK get the keystore loaded with the password (bypassing the arguments*/
+        KeyManager.getInstance(SERVER_KEYSTORE, new String(PASSWORD));
+
         sc = new ServerConnection();
     }
 
