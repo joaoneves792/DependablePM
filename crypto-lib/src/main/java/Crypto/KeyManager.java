@@ -31,8 +31,8 @@ public class KeyManager {
     private static KeyManager instance = null;
 
 
-    private KeyManager(String keystore){
-        _ks = loadKeystore(keystore, PASSWORD);
+    private KeyManager(String keystore, String password){
+        _ks = loadKeystore(keystore, password.toCharArray());
         //initializeCAClient();
         try {
             loadCACertificate();
@@ -52,14 +52,18 @@ public class KeyManager {
         }
     }
 
-    public static synchronized KeyManager getInstance(String keystore){
+    public static KeyManager getInstance(String keystore){
+        return getInstance(keystore, new String(PASSWORD));
+    }
+
+    public static synchronized KeyManager getInstance(String keystore, String password){
         if(null == instance)
             if(null != keystore)
-                instance = new KeyManager(keystore);
+                instance = new KeyManager(keystore, password);
             else
                 instance = new KeyManager();
         else if(null == _ks && null != keystore)
-            _ks = loadKeystore(keystore, PASSWORD);
+            _ks = loadKeystore(keystore, password.toCharArray());
         return instance;
     }
 

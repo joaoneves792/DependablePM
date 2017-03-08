@@ -2,24 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="62659c2d-c0c6-4405-b7df-a3d9b4241af6" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/crypto-lib/target/maven-archiver/pom.properties" afterPath="$PROJECT_DIR$/crypto-lib/target/maven-archiver/pom.properties" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/crypto-lib/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" afterPath="$PROJECT_DIR$/crypto-lib/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/crypto-lib/src/main/java/Crypto/KeyManager.java" afterPath="$PROJECT_DIR$/crypto-lib/src/main/java/Crypto/KeyManager.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/pm-client/.idea/workspace.xml" afterPath="$PROJECT_DIR$/pm-client/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/pm-client/src/main/java/passwordmanager/PMLibraryImpl.java" afterPath="$PROJECT_DIR$/pm-client/src/main/java/passwordmanager/PMLibraryImpl.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/pm-client/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" afterPath="$PROJECT_DIR$/pm-client/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/pm-client/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" afterPath="$PROJECT_DIR$/pm-client/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/pm-client/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/createdFiles.lst" afterPath="$PROJECT_DIR$/pm-client/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/createdFiles.lst" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/pm-client/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/inputFiles.lst" afterPath="$PROJECT_DIR$/pm-client/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/inputFiles.lst" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/pm-client/target/surefire-reports/TEST-passwordmanager.ClientAppTest.xml" afterPath="$PROJECT_DIR$/pm-client/target/surefire-reports/TEST-passwordmanager.ClientAppTest.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/pm-client/target/surefire-reports/TEST-passwordmanager.LibraryTest.xml" afterPath="$PROJECT_DIR$/pm-client/target/surefire-reports/TEST-passwordmanager.LibraryTest.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/pm-client/target/surefire-reports/passwordmanager.ClientAppTest.txt" afterPath="$PROJECT_DIR$/pm-client/target/surefire-reports/passwordmanager.ClientAppTest.txt" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/pm-client/target/surefire-reports/passwordmanager.LibraryTest.txt" afterPath="$PROJECT_DIR$/pm-client/target/surefire-reports/passwordmanager.LibraryTest.txt" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/pm-server/target/maven-archiver/pom.properties" afterPath="$PROJECT_DIR$/pm-server/target/maven-archiver/pom.properties" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/pm-server/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" afterPath="$PROJECT_DIR$/pm-server/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/pm-server/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" afterPath="$PROJECT_DIR$/pm-server/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/pm-server/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/inputFiles.lst" afterPath="$PROJECT_DIR$/pm-server/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/inputFiles.lst" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/pm-server/target/surefire-reports/TEST-passwordmanager.ServerConnectionTest.xml" afterPath="$PROJECT_DIR$/pm-server/target/surefire-reports/TEST-passwordmanager.ServerConnectionTest.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/pm-server/target/surefire-reports/passwordmanager.ServerConnectionTest.txt" afterPath="$PROJECT_DIR$/pm-server/target/surefire-reports/passwordmanager.ServerConnectionTest.txt" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -34,17 +18,20 @@
   <component name="ExecutionTargetManager" SELECTED_TARGET="default_target" />
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="KeyManager.java" pinned="false" current-in-tab="false">
+      <file leaf-file-name="KeyManager.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/crypto-lib/src/main/java/Crypto/KeyManager.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="555">
-              <caret line="56" column="32" lean-forward="true" selection-start-line="56" selection-start-column="32" selection-end-line="56" selection-end-column="32" />
-              <folding />
+            <state relative-caret-position="270">
+              <caret line="55" column="15" lean-forward="false" selection-start-line="55" selection-start-column="15" selection-end-line="55" selection-end-column="15" />
+              <folding>
+                <element signature="e#1698#1699#0" expanded="true" />
+                <element signature="e#1764#1765#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="ServerConnection.java" pinned="false" current-in-tab="true">
+      <file leaf-file-name="ServerConnection.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/pm-server/src/main/java/passwordmanager/ServerConnection.java">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="-855">
@@ -62,6 +49,13 @@
   <component name="GradleLocalSettings">
     <option name="externalProjectsViewState">
       <projects_view />
+    </option>
+  </component>
+  <component name="IdeDocumentHistory">
+    <option name="CHANGED_PATHS">
+      <list>
+        <option value="$PROJECT_DIR$/crypto-lib/src/main/java/Crypto/KeyManager.java" />
+      </list>
     </option>
   </component>
   <component name="ProjectFrameBounds">
@@ -383,19 +377,22 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/crypto-lib/src/main/java/Crypto/KeyManager.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="555">
-          <caret line="56" column="32" lean-forward="true" selection-start-line="56" selection-start-column="32" selection-end-line="56" selection-end-column="32" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/pm-server/src/main/java/passwordmanager/ServerConnection.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-855">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/crypto-lib/src/main/java/Crypto/KeyManager.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="270">
+          <caret line="55" column="15" lean-forward="false" selection-start-line="55" selection-start-column="15" selection-end-line="55" selection-end-column="15" />
+          <folding>
+            <element signature="e#1698#1699#0" expanded="true" />
+            <element signature="e#1764#1765#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
