@@ -81,7 +81,7 @@ public class PMLibraryImpl implements  PMLibrary{
             byte[] signature = Cryptography.sign(userdata, clientKey);
 
             // Send request to server
-            pm.put(nounce, cipheredDomain, cipheredPassword, cipheredUsername, state.getClientCertificate(), signature);
+            pm.put(nounce, cipheredDomain, cipheredUsername, cipheredPassword, state.getClientCertificate(), signature);
 
 
         }catch(NoSuchAlgorithmException e){
@@ -128,7 +128,7 @@ public class PMLibraryImpl implements  PMLibrary{
 
             // Make get request
             PasswordResponse passwordResponse;
-            passwordResponse = pm.get(nounce, state.getClientCertificate(), domain, username, signature);
+            passwordResponse = pm.get(nounce, state.getClientCertificate(), cipheredDomain, cipheredUsername, signature);
 
             return passwordResponse.password;
         }catch(HandshakeFailedException e){
