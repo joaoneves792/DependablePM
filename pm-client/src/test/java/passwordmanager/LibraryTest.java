@@ -77,20 +77,15 @@ public class LibraryTest {
 
     @org.junit.Test
     public void initSession() throws Exception{
-        // Initialize a keystore
-        KeyStore clientKeystore = loadKeystore(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD);
-
         // Initialize library
-        lib.init(clientKeystore, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
+        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
     }
 
     @org.junit.Test
     public void registerUser() throws Exception{
-        // Initialize a keystore
-        KeyStore clientKeystore = loadKeystore(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD);
 
         // Initialize library
-        lib.init(clientKeystore, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
+        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
 
         // Register user
         lib.register_user();
@@ -98,11 +93,9 @@ public class LibraryTest {
 
     @org.junit.Test
     public void savedPassword() throws RemoteException, LibraryOperationException{
-        // Initialize a keystore
-        KeyStore clientKeystore = loadKeystore(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD);
 
         // Initialize library
-        lib.init(clientKeystore, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
+        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
 
         // Register user
         lib.register_user();
@@ -116,11 +109,8 @@ public class LibraryTest {
 
     @org.junit.Test
     public void retrievePassword() throws RemoteException, LibraryOperationException{
-        // Initialize a keystore
-        KeyStore clientKeystore = loadKeystore(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD);
-
         // Initialize library
-        lib.init(clientKeystore, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
+        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
 
         // Register user
         lib.register_user();
@@ -139,11 +129,8 @@ public class LibraryTest {
 
     @org.junit.Test(expected = SessionNotInitializedException.class)
     public void sucessfullyCloseSession() throws RemoteException{
-        // Initialize a keystore
-        KeyStore clientKeystore = loadKeystore(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD);
-
         // Initialize library
-        lib.init(clientKeystore, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
+        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
 
         // Close session
         lib.close();
@@ -154,11 +141,8 @@ public class LibraryTest {
 
     @org.junit.Test
     public void closeSession() throws RemoteException{
-        // Initialize a keystore
-        KeyStore clientKeystore = loadKeystore(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD);
-
         // Initialize library
-        lib.init(clientKeystore, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
+        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
 
         // Close session
         lib.close();
@@ -173,11 +157,8 @@ public class LibraryTest {
 
     @org.junit.Test
     public void failRegisterWrongKeystorePassword() throws RemoteException{
-        // Initialize a keystore
-        KeyStore clientKeystore = loadKeystore(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD);
-
         // Initialize library
-        lib.init(clientKeystore, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
+        lib.init(CLIENT_WRONG_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
     }
 
     @org.junit.Test(expected = SessionNotInitializedException.class)

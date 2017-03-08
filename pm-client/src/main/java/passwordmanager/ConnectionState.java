@@ -1,9 +1,13 @@
 package passwordmanager;
 
+import Crypto.KeyManager;
 import Crypto.exceptions.FailedToRetrieveKeyException;
 
 import java.security.KeyStore;
 import java.security.KeyStoreException;
+import java.security.Signature;
+import java.security.SignatureException;
+import java.security.cert.CertificateException;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
@@ -13,15 +17,16 @@ import java.security.cert.X509Certificate;
  */
 public class ConnectionState {
     private static final String SERVER_CERT = "dependablepmserver";
-    private KeyStore keyStore;
+    //private KeyStore keyStore;
     private String pubKeyAlias;
     private String privKeyAlias;
     private String password;
     private X509Certificate clientCertificate;
     private X509Certificate serverCertificate;
+    private KeyManager keyManager;
 
-    public ConnectionState(KeyStore keystore){
-        this.keyStore = keystore;
+    public ConnectionState(String keyStoreName, String password){
+        keyManager = KeyManager.getInstance(keyStoreName, password);
     }
 
     /**
@@ -31,26 +36,20 @@ public class ConnectionState {
     public void initializeCertificates(String certAlias, String serverAlias) throws FailedToRetrieveKeyException{
         try{
             // Initialize Client certificate
-            clientCertificate = (X509Certificate) keyStore.getCertificate(certAlias);
+            clientCertificate = keyManager.getCertificate(certAlias);
 
             // Initialize Server certificate
-            serverCertificate = (X509Certificate) keyStore.getCertificate(serverAlias);
+            serverCertificate = keyManager.getCertificate(serverAlias);
 
-        }catch (KeyStoreException e){
-            throw new FailedToRetrieveKeyException("Failed to load the CA certificate");
+        }catch(SignatureException e){
+            throw new FailedToRetrieveKeyException("Failed to load the CA certificate", e);
+        }catch(CertificateException e){
+            throw new FailedToRetrieveKeyException("Failed to load the CA certificate", e);
         }
     }
 
     public X509Certificate getClientCertificate() {
         return clientCertificate;
-    }
-
-    public KeyStore getKeyStore() {
-        return keyStore;
-    }
-
-    public void setKeyStore(KeyStore keyStore) {
-        this.keyStore = keyStore;
     }
 
     public void setPubKeyAlias(String pubKeyAlias) {
@@ -79,5 +78,9 @@ public class ConnectionState {
 
     public X509Certificate getServerCertificate() {
         return serverCertificate;
+    }
+
+    public KeyManager getKeyManager() {
+        return keyManager;
     }
 }

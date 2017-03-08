@@ -85,6 +85,11 @@ public class KeyManager {
         return null;
     }
 
+    public synchronized PrivateKey getPrivateKey(String alias) throws NoSuchAlgorithmException, UnrecoverableEntryException, KeyStoreException{
+        KeyStore.ProtectionParameter protParam = new KeyStore.PasswordProtection(PASSWORD);
+        return ((KeyStore.PrivateKeyEntry)(_ks.getEntry(alias, protParam))).getPrivateKey();
+    }
+
     public synchronized PrivateKey getMyPrivateKey() throws NoSuchAlgorithmException, UnrecoverableEntryException, KeyStoreException{
         KeyStore.ProtectionParameter protParam = new KeyStore.PasswordProtection(PASSWORD);
         return ((KeyStore.PrivateKeyEntry)(_ks.getEntry(MYKEY, protParam))).getPrivateKey();

@@ -31,11 +31,10 @@ public class PMLibraryImpl implements  PMLibrary{
     }
 
     @Override
-    public void init(KeyStore keystore, String password, String certAlias, String serverAlias, String privKeyAlias) throws RemoteException {
+    public void init(String keystoreName, String password, String certAlias, String serverAlias, String privKeyAlias) throws RemoteException {
         try{
 
-            state = new ConnectionState(keystore);
-            state.setKeyStore(keystore);
+            state = new ConnectionState(keystoreName, password);
             state.initializeCertificates(certAlias, serverAlias);
             state.setPrivKeyAlias(privKeyAlias);
             state.setPassword(password);
@@ -66,7 +65,7 @@ public class PMLibraryImpl implements  PMLibrary{
 
             // Prepare arguments
             KeyStore.ProtectionParameter protParam = new KeyStore.PasswordProtection(state.getPassword().toCharArray());
-            PrivateKey clientKey = ((KeyStore.PrivateKeyEntry)(state.getKeyStore().getEntry(state.getPrivKeyAlias(), protParam))).getPrivateKey();
+            PrivateKey clientKey = state.getKeyManager().getPrivateKey(state.getPrivKeyAlias());
             byte[] nounce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(pm.getServerNonce()+1).array(), clientKey);
             byte[] cipheredUsername = Cryptography.asymmetricCipher(username, state.getClientCertificate().getPublicKey());
             byte[] cipheredDomain = Cryptography.asymmetricCipher(domain, state.getClientCertificate().getPublicKey());
@@ -122,8 +121,7 @@ public class PMLibraryImpl implements  PMLibrary{
             System.arraycopy(cipheredUsername, 0, userdata, cipheredDomain.length, cipheredUsername.length);
             System.arraycopy(nounceBytes, 0, userdata, cipheredDomain.length+cipheredUsername.length, NONCE_SIZE);
 
-            KeyStore.ProtectionParameter protParam = new KeyStore.PasswordProtection(state.getPassword().toCharArray());
-            PrivateKey clientKey = ((KeyStore.PrivateKeyEntry)(state.getKeyStore().getEntry(state.getPrivKeyAlias(), protParam))).getPrivateKey();
+            PrivateKey clientKey = state.getKeyManager().getPrivateKey(state.getPrivKeyAlias());
             byte[] signature = Cryptography.sign(userdata, clientKey);
 
             // Make get request
