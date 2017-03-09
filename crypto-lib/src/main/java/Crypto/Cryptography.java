@@ -12,9 +12,9 @@ import java.security.*;
  */
 public class Cryptography {
     private static final int IV_SIZE = 16;
+    private static final int AES_KEY_SIZE = 256;
 
     public static byte[] symmetricCipher(byte[] plainText, SecretKey key, String algorithm, byte[] iv) throws FailedToEncryptException {
-        //Should we really use CBC? It will cost 16 extra characters
         try{
             IvParameterSpec ivspec = new IvParameterSpec(iv);
 
@@ -44,12 +44,16 @@ public class Cryptography {
         return symmetricCipher(plainText, key, "AES/CBC/withCTS", iv);
     }
 
-    public static byte[] symmetricCipherWithPKCS5(byte[] plainText, SecretKey key, byte[] iv)throws FailedToEncryptException{
+    public static byte[] symmetricCipherWithPKCS5(byte[] plainText, SecretKey key)throws FailedToEncryptException{
+        SecureRandom random = new SecureRandom();
+        byte iv[] = new byte[IV_SIZE];
+        random.nextBytes(iv);
         return symmetricCipher(plainText, key, "AES/CBC/PKCS5Padding", iv);
     }
 
 
-    public static byte[] symmetricDecipher(byte[] cipheredData, SecretKey key, String algorithm, byte[] iv)throws FailedToDecryptException {
+    public static byte[] symmetricDecipher(byte[] cipheredData, SecretKey key, String algorithm)throws FailedToDecryptException {
+        byte[] iv = new byte[IV_SIZE];
         System.arraycopy(cipheredData,0, iv, 0, IV_SIZE);
         IvParameterSpec ivspec = new IvParameterSpec(iv);
 
@@ -71,12 +75,11 @@ public class Cryptography {
     }
 
     public static byte[] symmetricDecipherWithCTS(byte[] plainText, SecretKey key)throws FailedToDecryptException{
-        byte[] iv = new byte[IV_SIZE];
-        return symmetricDecipher(plainText, key, "AES/CBC/withCTS", iv);
+        return symmetricDecipher(plainText, key, "AES/CBC/withCTS");
     }
 
-    public static byte[] symmetricDecipherWithPKCS5(byte[] plainText, SecretKey key, byte[] iv)throws FailedToDecryptException{
-        return symmetricDecipher(plainText, key, "AES/CBC/PKCS5Padding", iv);
+    public static byte[] symmetricDecipherWithPKCS5(byte[] plainText, SecretKey key)throws FailedToDecryptException{
+        return symmetricDecipher(plainText, key, "AES/CBC/PKCS5Padding");
     }
 
     public static byte[] asymmetricCipher(byte[] plainText, Key key)throws FailedToEncryptException{
@@ -175,6 +178,16 @@ public class Cryptography {
             return messageDigest;
         } catch ( NoSuchAlgorithmException exception) {
             throw new FailedToHashException(exception);
+        }
+    }
+
+    public static SecretKey generateNewSymmetricKey() throws FailedToGenerateKeyException{
+        try {
+            KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+            keyGen.init(AES_KEY_SIZE, new SecureRandom());
+            return keyGen.generateKey();
+        }catch (NoSuchAlgorithmException e){
+            throw new FailedToGenerateKeyException("AES cipher is not available", e);
         }
     }
 
