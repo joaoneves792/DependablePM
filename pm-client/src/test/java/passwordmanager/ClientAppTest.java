@@ -95,8 +95,10 @@ public class ClientAppTest {
     @org.junit.Test
     public void put() throws Exception {
         byte[] nonce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(sc.getServerNonce()+1).array(), clientKey);
-        byte[] username = Cryptography.asymmetricCipher(USERNAME.getBytes(), clientCert.getPublicKey());
-        byte[] domain = Cryptography.asymmetricCipher(DOMAIN.getBytes(), clientCert.getPublicKey());
+        //byte[] username = Cryptography.asymmetricCipher(USERNAME.getBytes(), clientCert.getPublicKey());
+        //byte[] domain = Cryptography.asymmetricCipher(DOMAIN.getBytes(), clientCert.getPublicKey());
+        byte[] username = Cryptography.hash(USERNAME.getBytes());
+        byte[] domain = Cryptography.hash(DOMAIN.getBytes());
         byte[] password = Cryptography.asymmetricCipher(PASSWORD_TO_STORE.getBytes(), clientCert.getPublicKey());
 
         byte[] userdata = new byte[domain.length+username.length+password.length];
@@ -120,8 +122,8 @@ public class ClientAppTest {
     @org.junit.Test
     public void get() throws Exception {
         int nonce = sc.getServerNonce()+1;
-        byte[] username = Cryptography.asymmetricCipher(USERNAME.getBytes(), clientCert.getPublicKey());
-        byte[] domain = Cryptography.asymmetricCipher(DOMAIN.getBytes(), clientCert.getPublicKey());
+        byte[] username = Cryptography.hash(USERNAME.getBytes());
+        byte[] domain = Cryptography.hash(DOMAIN.getBytes());
 
         byte[] nonceBytes = ByteBuffer.allocate(NONCE_SIZE).putInt(nonce).array();
 
@@ -150,8 +152,8 @@ public class ClientAppTest {
     public void putNoHandhake()throws Exception{
 
         byte[] nonce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(sc.getServerNonce()+1).array(), clientKey);
-        byte[] username = Cryptography.asymmetricCipher(USERNAME.getBytes(), clientCert.getPublicKey());
-        byte[] domain = Cryptography.asymmetricCipher(DOMAIN.getBytes(), clientCert.getPublicKey());
+        byte[] username = Cryptography.hash(USERNAME.getBytes());
+        byte[] domain = Cryptography.hash(DOMAIN.getBytes());
         byte[] password = Cryptography.asymmetricCipher(PASSWORD_TO_STORE.getBytes(), clientCert.getPublicKey());
 
         byte[] userdata = new byte[domain.length+username.length+password.length];
@@ -167,8 +169,8 @@ public class ClientAppTest {
     @org.junit.Test(expected = HandshakeFailedException.class)
     public void getNoHandhake()throws Exception{
         int nonce = sc.getServerNonce()+1;
-        byte[] username = Cryptography.asymmetricCipher(USERNAME.getBytes(), clientCert.getPublicKey());
-        byte[] domain = Cryptography.asymmetricCipher(DOMAIN.getBytes(), clientCert.getPublicKey());
+        byte[] username = Cryptography.hash(USERNAME.getBytes());
+        byte[] domain = Cryptography.hash(DOMAIN.getBytes());
 
         byte[] nonceBytes = ByteBuffer.allocate(NONCE_SIZE).putInt(nonce).array();
 
@@ -185,8 +187,8 @@ public class ClientAppTest {
     @org.junit.Test(expected = AuthenticationFailureException.class)
     public void putBadNonce()throws Exception{
         byte[] nonce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(sc.getServerNonce()+2).array(), clientKey);
-        byte[] username = Cryptography.asymmetricCipher(USERNAME.getBytes(), clientCert.getPublicKey());
-        byte[] domain = Cryptography.asymmetricCipher(DOMAIN.getBytes(), clientCert.getPublicKey());
+        byte[] username = Cryptography.hash(USERNAME.getBytes());
+        byte[] domain = Cryptography.hash(DOMAIN.getBytes());
         byte[] password = Cryptography.asymmetricCipher(PASSWORD_TO_STORE.getBytes(), clientCert.getPublicKey());
 
         byte[] userdata = new byte[domain.length+username.length+password.length];
@@ -210,8 +212,8 @@ public class ClientAppTest {
     @org.junit.Test(expected = AuthenticationFailureException.class)
     public void getBadNonce()throws Exception{
         int nonce = sc.getServerNonce()+2;
-        byte[] username = Cryptography.asymmetricCipher(USERNAME.getBytes(), clientCert.getPublicKey());
-        byte[] domain = Cryptography.asymmetricCipher(DOMAIN.getBytes(), clientCert.getPublicKey());
+        byte[] username = Cryptography.hash(USERNAME.getBytes());
+        byte[] domain = Cryptography.hash(DOMAIN.getBytes());
 
         byte[] nonceBytes = ByteBuffer.allocate(NONCE_SIZE).putInt(nonce).array();
 
@@ -236,8 +238,8 @@ public class ClientAppTest {
     @org.junit.Test(expected = AuthenticationFailureException.class)
     public void putBadNonceCipher()throws Exception{
         byte[] nonce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(sc.getServerNonce()+1).array(), clientKey);
-        byte[] username = Cryptography.asymmetricCipher(USERNAME.getBytes(), clientCert.getPublicKey());
-        byte[] domain = Cryptography.asymmetricCipher(DOMAIN.getBytes(), clientCert.getPublicKey());
+        byte[] username = Cryptography.hash(USERNAME.getBytes());
+        byte[] domain = Cryptography.hash(DOMAIN.getBytes());
         byte[] password = Cryptography.asymmetricCipher(PASSWORD_TO_STORE.getBytes(), clientCert.getPublicKey());
 
         byte[] userdata = new byte[domain.length+username.length+password.length];
@@ -263,8 +265,8 @@ public class ClientAppTest {
     @org.junit.Test(expected = AuthenticationFailureException.class)
     public void putTamperedMessage()throws Exception{
         byte[] nonce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(sc.getServerNonce()+1).array(), clientKey);
-        byte[] username = Cryptography.asymmetricCipher(USERNAME.getBytes(), clientCert.getPublicKey());
-        byte[] domain = Cryptography.asymmetricCipher(DOMAIN.getBytes(), clientCert.getPublicKey());
+        byte[] username = Cryptography.hash(USERNAME.getBytes());
+        byte[] domain = Cryptography.hash(DOMAIN.getBytes());
         byte[] password = Cryptography.asymmetricCipher(PASSWORD_TO_STORE.getBytes(), clientCert.getPublicKey());
 
         byte[] userdata = new byte[domain.length+username.length+password.length];
@@ -290,8 +292,8 @@ public class ClientAppTest {
     @org.junit.Test(expected = AuthenticationFailureException.class)
     public void getTamperedMessage()throws Exception{
         int nonce = sc.getServerNonce()+1;
-        byte[] username = Cryptography.asymmetricCipher(USERNAME.getBytes(), clientCert.getPublicKey());
-        byte[] domain = Cryptography.asymmetricCipher(DOMAIN.getBytes(), clientCert.getPublicKey());
+        byte[] username = Cryptography.hash(USERNAME.getBytes());
+        byte[] domain = Cryptography.hash(DOMAIN.getBytes());
 
         byte[] nonceBytes = ByteBuffer.allocate(NONCE_SIZE).putInt(nonce).array();
 
