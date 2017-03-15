@@ -36,10 +36,6 @@ public class Password {
     }
 
     public Boolean checkMatch(String domain, String username){
-        System.out.println("+++++++++++++++++++++++++++++++++++++");
-        System.out.println(domain);
-        System.out.println(_domain);
-        System.out.println("+++++++++++++++++++++++++++++++++++++");
         return (domain.equals(_domain) &&  username.equals(_username) );
     }
 }
