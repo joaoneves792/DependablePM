@@ -1,10 +1,7 @@
 package passwordmanager;
 
 import Crypto.Cryptography;
-import Crypto.exceptions.FailedToDecryptException;
-import Crypto.exceptions.FailedToEncryptException;
-import Crypto.exceptions.FailedToRetrieveKeyException;
-import Crypto.exceptions.FailedToSignException;
+import Crypto.exceptions.*;
 import passwordmanager.exception.LibraryInitializationException;
 import passwordmanager.exception.LibraryOperationException;
 import passwordmanager.exception.ServerAuthenticationException;
@@ -67,8 +64,9 @@ public class PMLibraryImpl implements  PMLibrary{
             KeyStore.ProtectionParameter protParam = new KeyStore.PasswordProtection(state.getPassword().toCharArray());
             PrivateKey clientKey = state.getKeyManager().getPrivateKey(state.getPrivKeyAlias());
             byte[] nounce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(pm.getServerNonce()+1).array(), clientKey);
-            byte[] cipheredUsername = Cryptography.asymmetricCipher(username, state.getClientCertificate().getPublicKey());
-            byte[] cipheredDomain = Cryptography.asymmetricCipher(domain, state.getClientCertificate().getPublicKey());
+
+            byte[] cipheredUsername = Cryptography.hash(username);
+            byte[] cipheredDomain = Cryptography.hash(domain);
             byte[] cipheredPassword = Cryptography.asymmetricCipher(password, state.getClientCertificate().getPublicKey());
 
             // Prepare signature of arguments
@@ -99,6 +97,8 @@ public class PMLibraryImpl implements  PMLibrary{
             throw new LibraryOperationException("Message invalid for server", e);
         }catch(ServerAuthenticationException e){
             throw new LibraryOperationException("Failure authenticating server", e);
+        }catch(FailedToHashException e){
+            throw new LibraryOperationException("Failure hashing data...", e);
         }
     }
 
@@ -111,8 +111,8 @@ public class PMLibraryImpl implements  PMLibrary{
             authenticateServer();
 
             // Prepare arguments
-            byte[] cipheredUsername = Cryptography.asymmetricCipher(username, state.getClientCertificate().getPublicKey());
-            byte[] cipheredDomain = Cryptography.asymmetricCipher(domain, state.getClientCertificate().getPublicKey());
+            byte[] cipheredUsername = Cryptography.hash(username);
+            byte[] cipheredDomain = Cryptography.hash(domain);
             int nounce = pm.getServerNonce()+1; // Why not to cipher the nounce like we do in put?
             byte[] nounceBytes = ByteBuffer.allocate(NONCE_SIZE).putInt(nounce).array();
 
@@ -139,12 +139,12 @@ public class PMLibraryImpl implements  PMLibrary{
             throw new LibraryOperationException("Failure retrieving private key", e);
         }catch(KeyStoreException e){
             throw new LibraryOperationException("Failure retrieving private key", e);
-        }catch(FailedToEncryptException e){
-            throw new LibraryOperationException("Failure to encrypt data to sent to server", e);
         }catch(AuthenticationFailureException e){
             throw new LibraryOperationException("Message invalid for server", e);
         }catch(FailedToSignException e){
             throw new LibraryOperationException("Failure signing data", e);
+        }catch(FailedToHashException e){
+            throw new LibraryOperationException("Failure hashing data...", e);
         }
     }
 

@@ -52,27 +52,6 @@ public class LibraryTest {
         lib = new PMLibraryImpl(pm);
     }
 
-
-    private static KeyStore loadKeystore(String name, String password){
-        String qq;
-
-        FileInputStream fis;
-        String filename = name + ".jks";
-        try {
-            fis = new FileInputStream(filename);
-            KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-            keystore.load(fis, password.toCharArray());
-            return keystore;
-        } catch (FileNotFoundException e) {
-            System.err.println("Keystore file <" + filename + "> not fount.");
-            System.exit(-1);
-        } catch (KeyStoreException | IOException | NoSuchAlgorithmException | CertificateException e){
-            System.err.println("Failed to load the Keystore" + e.getMessage());
-            System.exit(-1);
-        }
-        return null;
-    }
-
     /*-------------------------------------------------------------------------------------
     START OF POSITIVE TESTING
     -------------------------------------------------------------------------------------*/
@@ -200,7 +179,11 @@ public class LibraryTest {
         lib.save_password(domain, username, password);
 
         // Initialize library
-        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
+        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, WRONG_PRIVATEKEY_ALIAS);
+
+        // Get a password
+        byte[] receivedPassword = lib.retrieve_password(domain, username);
+        assertEquals(password, receivedPassword);
     }
 
 
