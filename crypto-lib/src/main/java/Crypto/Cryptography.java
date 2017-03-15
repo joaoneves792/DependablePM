@@ -1,6 +1,7 @@
 package Crypto;
 
 import Crypto.exceptions.*;
+import java.util.Base64;
 
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
@@ -198,12 +199,12 @@ public class Cryptography {
     public static String decode(byte[] message) {
         return new String(message, Charset.defaultCharset());
     }
-
+*/
     public static String encodeForStorage(byte[] message) {
-        return Base64.encodeToString(message, Base64.DEFAULT);
+        return Base64.getEncoder().encodeToString(message);
     }
     public static byte[] decodeFromStorage(String message) {
-        return Base64.decode(message, Base64.DEFAULT);
+        return Base64.getDecoder().decode(message);
     }
-    */
+
 }

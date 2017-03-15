@@ -118,6 +118,9 @@ public class ServerConnectionTest {
 
     @org.junit.Test
     public void get() throws Exception {
+
+        put();
+
         int nonce = sc.getServerNonce()+1;
         byte[] username = Cryptography.asymmetricCipher(USERNAME.getBytes(), clientCert.getPublicKey());
         byte[] domain = Cryptography.asymmetricCipher(DOMAIN.getBytes(), clientCert.getPublicKey());

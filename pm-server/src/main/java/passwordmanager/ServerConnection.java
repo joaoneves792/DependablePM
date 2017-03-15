@@ -6,8 +6,7 @@ import Crypto.exceptions.FailedToDecryptException;
 import Crypto.exceptions.FailedToEncryptException;
 import Crypto.exceptions.FailedToVerifySignatureException;
 import Crypto.exceptions.InvalidSignatureException;
-import passwordmanager.exceptions.AuthenticationFailureException;
-import passwordmanager.exceptions.HandshakeFailedException;
+import passwordmanager.exceptions.*;
 
 import java.nio.ByteBuffer;
 import java.rmi.RemoteException;
@@ -29,8 +28,8 @@ public class ServerConnection extends UnicastRemoteObject implements ServerConne
 		_serverAuthenticationDone = false;
 	}
 
-	public String register(X509Certificate clientPublicKey) throws  RemoteException {
-    	return "register not implemented";
+	public void register(X509Certificate clientPublicKey) throws  RemoteException, UserAlreadyRegisteredException {
+		PasswordStore.getInstance().register(clientPublicKey.getPublicKey());
 	}
 
 	public byte[] handshake(int clientNonce) throws RemoteException, HandshakeFailedException {
@@ -59,7 +58,7 @@ public class ServerConnection extends UnicastRemoteObject implements ServerConne
 		return _serverNonce;
 	}
 
-	public void put(byte[] nonce, byte[] domain, byte[] username, byte[] password, X509Certificate clientCert, byte[] signature)throws RemoteException, HandshakeFailedException, AuthenticationFailureException{
+	public void put(byte[] nonce, byte[] domain, byte[] username, byte[] password, X509Certificate clientCert, byte[] signature)throws RemoteException, HandshakeFailedException, AuthenticationFailureException, UserNotRegisteredException{
 		if (!_serverAuthenticationDone){
 			throw new HandshakeFailedException("Handshake has not been successfully performed yet!");
 		}
@@ -90,11 +89,10 @@ public class ServerConnection extends UnicastRemoteObject implements ServerConne
 			throw new AuthenticationFailureException("Failed to verify clients signature!", e);
 		}
 
-        /*OK now we are in the clear! All we need to do is store the domain, username, password and signature!*/
-		//TODO: Read line above
+		PasswordStore.getInstance().storePassword(clientPubKey, domain,username, password, signature);
 	}
 
-	public PasswordResponse get(int nonce, X509Certificate clientCert, byte[] domain, byte[] username, byte[] signature)throws RemoteException, HandshakeFailedException, AuthenticationFailureException{
+	public PasswordResponse get(int nonce, X509Certificate clientCert, byte[] domain, byte[] username, byte[] signature)throws RemoteException, HandshakeFailedException, AuthenticationFailureException, UserNotRegisteredException, PasswordNotFoundException, StorageFailureException{
 		if (!_serverAuthenticationDone){
 			throw new HandshakeFailedException("Handshake has not been successfully performed yet!");
 		}
@@ -121,8 +119,19 @@ public class ServerConnection extends UnicastRemoteObject implements ServerConne
 			throw new AuthenticationFailureException("Failed to verify clients signature!", e);
 		}
 
-        /*OK now we are in the clear! All we need to do is retrieve the password*/
-		//TODO: Read line above
+		Password pw = PasswordStore.getInstance().getPassword(clientPubKey,domain, username);
+        /*Now we make sure the storage has not been tampered with!*/
+		byte[] storeduserdata = new byte[pw.get_domain().length+pw.get_username().length+pw.get_password().length];
+		System.arraycopy(pw.get_domain(), 0, storeduserdata, 0, pw.get_domain().length);
+		System.arraycopy(pw.get_username(), 0, storeduserdata, pw.get_domain().length, pw.get_username().length);
+		System.arraycopy(pw.get_password(), 0, storeduserdata, pw.get_domain().length+pw.get_username().length, pw.get_password().length);
+
+		try {
+			Cryptography.verifySignature(storeduserdata, pw.get_signature(), clientPubKey);
+		}catch (FailedToVerifySignatureException | InvalidSignatureException e){
+			throw new StorageFailureException("Failed to verify clients signature on the stored data!", e);
+		}
+
 
         /*Finally we put everything into a PasswordResponse including the nonce for freshness!*/
 		PrivateKey serverPrivKey;
@@ -144,7 +153,7 @@ public class ServerConnection extends UnicastRemoteObject implements ServerConne
 		_clientNonce += 1;
 
 
-		return new PasswordResponse(response);
+		return new PasswordResponse(pw, response);
 	}
 
 }

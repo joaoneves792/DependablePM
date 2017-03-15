@@ -13,12 +13,11 @@ public class PasswordResponse implements Serializable {
 
     public final byte[] nonce;
 
-    //TODO: Change the constructor to use the Password class from storage
-    public PasswordResponse(byte[] serverResponse){
-        domain = new byte[1];
-        username = new byte[1];
-        password = new byte[1];
-        signature = new byte[1];
+    public PasswordResponse(Password storedPw, byte[] serverResponse){
+        domain = storedPw.get_domain();
+        username = storedPw.get_username();
+        password = storedPw.get_password();
+        signature = storedPw.get_signature();
 
         nonce = serverResponse;
     }
