@@ -25,6 +25,7 @@ public class CryptographyTest {
     so here we only test the added/adapted methods
      */
 
+    /*
     @org.junit.Test
     public void symmetricCipherWithPKCS5() throws Exception {
         SecretKey key = Cryptography.generateNewSymmetricKey();
@@ -32,6 +33,6 @@ public class CryptographyTest {
         byte[] ciphertext = Cryptography.symmetricCipherWithPKCS5(plaintext, key);
         byte[] decipheredtext = Cryptography.symmetricDecipherWithPKCS5(ciphertext, key);
         assertEquals(PLAINTEXT, new String(decipheredtext));
-    }
+    }*/
 
 }

@@ -1,12 +1,12 @@
 package passwordmanager;
 
+import Crypto.exceptions.FailedToRetrieveKeyException;
+import passwordmanager.exception.LibraryInitializationException;
 import passwordmanager.exception.LibraryOperationException;
 import passwordmanager.exception.SessionNotInitializedException;
 import passwordmanager.exceptions.HandshakeFailedException;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.rmi.Naming;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
@@ -54,6 +54,8 @@ public class LibraryTest {
 
 
     private static KeyStore loadKeystore(String name, String password){
+        String qq;
+
         FileInputStream fis;
         String filename = name + ".jks";
         try {
@@ -155,11 +157,52 @@ public class LibraryTest {
     START OF NEGATIVE TESTING
     -------------------------------------------------------------------------------------*/
 
-    @org.junit.Test
-    public void failRegisterWrongKeystorePassword() throws RemoteException{
+    @org.junit.Test(expected = LibraryInitializationException.class)
+    public void failWrongServerAlias() throws RemoteException{
         // Initialize library
-        lib.init(CLIENT_WRONG_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
+        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, WRONG_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
     }
+
+    @org.junit.Test(expected = LibraryInitializationException.class)
+    public void failWrongCertAlias() throws RemoteException{
+        // Initialize library
+        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, WRONG_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
+
+    }
+
+    @org.junit.Test(expected = LibraryOperationException.class)
+    public void failSaveWrongPrivKeyAlias() throws RemoteException, LibraryOperationException{
+        // Initialize library
+        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, WRONG_PRIVATEKEY_ALIAS);
+
+        // Register user
+        lib.register_user();
+
+        // Save a password
+        byte[] domain = RIGHT_DOMAIN.getBytes();
+        byte[] password = RIGHT_PASSWORD.getBytes();
+        byte[] username = RIGHT_USERNAME.getBytes();
+        lib.save_password(domain, username, password);
+    }
+
+    @org.junit.Test(expected = LibraryOperationException.class)
+    public void failSaveWrongPrivKeyPassword() throws RemoteException, LibraryOperationException{
+        // Initialize library
+        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
+
+        // Register user
+        lib.register_user();
+
+        // Save a password
+        byte[] domain = RIGHT_DOMAIN.getBytes();
+        byte[] password = RIGHT_PASSWORD.getBytes();
+        byte[] username = RIGHT_USERNAME.getBytes();
+        lib.save_password(domain, username, password);
+
+        // Initialize library
+        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
+    }
+
 
     @org.junit.Test(expected = SessionNotInitializedException.class)
     public void unintializedSessionWithPut() throws RemoteException, LibraryOperationException{

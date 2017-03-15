@@ -18,3 +18,10 @@ hs_err_pid*
 /pm-server/target/*
 /pm-client/target/*
 /crypto-lib/target/*
+
+# Idea folders
+.idea/*
+crypto-lib/.idea/*
+pm-client/.idea/*
+pm-server/.idea/*
+
