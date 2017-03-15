@@ -6,8 +6,7 @@ import passwordmanager.exception.LibraryInitializationException;
 import passwordmanager.exception.LibraryOperationException;
 import passwordmanager.exception.ServerAuthenticationException;
 import passwordmanager.exception.SessionNotInitializedException;
-import passwordmanager.exceptions.AuthenticationFailureException;
-import passwordmanager.exceptions.HandshakeFailedException;
+import passwordmanager.exceptions.*;
 
 
 import java.nio.ByteBuffer;
@@ -42,12 +41,16 @@ public class PMLibraryImpl implements  PMLibrary{
     }
 
     @Override
-    public void register_user() throws RemoteException {
+    public void register_user() throws RemoteException, LibraryOperationException {
         // Verifies if session was already initialized
         checkSession();
 
         // Register user at server using given certificate
-        pm.register(state.getClientCertificate());
+        try{
+            pm.register(state.getClientCertificate());
+        }catch(UserAlreadyRegisteredException e){
+            throw new LibraryOperationException("User already registered...");
+        }
     }
 
     @Override
@@ -99,6 +102,8 @@ public class PMLibraryImpl implements  PMLibrary{
             throw new LibraryOperationException("Failure authenticating server", e);
         }catch(FailedToHashException e){
             throw new LibraryOperationException("Failure hashing data...", e);
+        }catch(UserNotRegisteredException e){
+            throw new LibraryOperationException("User is not registered ...", e);
         }
     }
 
@@ -145,6 +150,12 @@ public class PMLibraryImpl implements  PMLibrary{
             throw new LibraryOperationException("Failure signing data", e);
         }catch(FailedToHashException e){
             throw new LibraryOperationException("Failure hashing data...", e);
+        }catch(StorageFailureException e){
+            throw new LibraryOperationException("Failure accessing storage", e);
+        }catch(UserNotRegisteredException e){
+            throw new LibraryOperationException("User is not registered", e);
+        }catch(PasswordNotFoundException e){
+            throw new LibraryOperationException("Password not found", e);
         }
     }
 

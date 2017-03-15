@@ -11,7 +11,7 @@ import java.security.KeyStore;
  */
 public interface PMLibrary {
     void init(String keystoreName, String password, String certAlias, String serverAlias, String privKeyAlias) throws RemoteException;
-    void register_user() throws RemoteException;
+    void register_user() throws RemoteException, LibraryOperationException;
     void save_password(byte[] domain, byte[] username, byte[] password) throws RemoteException, LibraryOperationException;
     byte[] retrieve_password(byte[] domain, byte[] username) throws RemoteException, LibraryOperationException;
     void close() throws RemoteException;

@@ -5,6 +5,7 @@ import passwordmanager.exception.LibraryInitializationException;
 import passwordmanager.exception.LibraryOperationException;
 import passwordmanager.exception.SessionNotInitializedException;
 import passwordmanager.exceptions.HandshakeFailedException;
+import passwordmanager.exceptions.UserNotRegisteredException;
 
 import java.io.*;
 import java.rmi.Naming;
@@ -50,6 +51,17 @@ public class LibraryTest {
 
         // Initialize Library
         lib = new PMLibraryImpl(pm);
+
+        // Register user
+        try{
+            // Initialize library
+            lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
+
+            lib.register_user();
+        }catch(LibraryOperationException e){
+            // Throw in case of UserAlreadyRegisteredException
+            // Ignore and don't do anything
+        }
     }
 
     /*-------------------------------------------------------------------------------------
@@ -63,23 +75,10 @@ public class LibraryTest {
     }
 
     @org.junit.Test
-    public void registerUser() throws Exception{
-
-        // Initialize library
-        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
-
-        // Register user
-        lib.register_user();
-    }
-
-    @org.junit.Test
     public void savedPassword() throws RemoteException, LibraryOperationException{
 
         // Initialize library
         lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
-
-        // Register user
-        lib.register_user();
 
         // Save a password
         byte[] domain = RIGHT_DOMAIN.getBytes();
@@ -93,9 +92,6 @@ public class LibraryTest {
         // Initialize library
         lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
 
-        // Register user
-        lib.register_user();
-
         // Save a password
         byte[] domain = RIGHT_DOMAIN.getBytes();
         byte[] password = RIGHT_PASSWORD.getBytes();
@@ -104,12 +100,14 @@ public class LibraryTest {
 
         // Get a password
         byte[] receivedPassword = lib.retrieve_password(domain, username);
+        System.out.println(new String(receivedPassword));
+        System.out.println(new String(password));
         assertEquals(password, receivedPassword);
     }
 
 
     @org.junit.Test(expected = SessionNotInitializedException.class)
-    public void sucessfullyCloseSession() throws RemoteException{
+    public void sucessfullyCloseSession() throws RemoteException, LibraryOperationException{
         // Initialize library
         lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
 
@@ -117,7 +115,7 @@ public class LibraryTest {
         lib.close();
 
         // Try to make something
-        lib.register_user();
+        lib.save_password(null, null, null);
     }
 
     @org.junit.Test
@@ -154,9 +152,6 @@ public class LibraryTest {
         // Initialize library
         lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, WRONG_PRIVATEKEY_ALIAS);
 
-        // Register user
-        lib.register_user();
-
         // Save a password
         byte[] domain = RIGHT_DOMAIN.getBytes();
         byte[] password = RIGHT_PASSWORD.getBytes();
@@ -168,9 +163,6 @@ public class LibraryTest {
     public void failSaveWrongPrivKeyPassword() throws RemoteException, LibraryOperationException{
         // Initialize library
         lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
-
-        // Register user
-        lib.register_user();
 
         // Save a password
         byte[] domain = RIGHT_DOMAIN.getBytes();
@@ -189,16 +181,19 @@ public class LibraryTest {
 
     @org.junit.Test(expected = SessionNotInitializedException.class)
     public void unintializedSessionWithPut() throws RemoteException, LibraryOperationException{
+        lib.close();
         lib.save_password(null, null, null);
     }
 
     @org.junit.Test(expected = SessionNotInitializedException.class)
     public void unintializedSessionWithGet() throws RemoteException, LibraryOperationException{
+        lib.close();
         lib.retrieve_password(null, null);
     }
 
     @org.junit.Test(expected = SessionNotInitializedException.class)
     public void unitializedSessionWithRegister() throws RemoteException, LibraryOperationException{
+        lib.close();
         lib.register_user();
     }
 }
