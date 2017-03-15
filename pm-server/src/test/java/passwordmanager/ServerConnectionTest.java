@@ -2,6 +2,7 @@ package passwordmanager;
 
 import Crypto.Cryptography;
 import Crypto.KeyManager;
+import passwordmanager.exceptions.UserAlreadyRegisteredException;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -70,11 +71,11 @@ public class ServerConnectionTest {
         KeyManager.getInstance(SERVER_KEYSTORE, new String(PASSWORD));
 
         sc = new ServerConnection();
-    }
-
-    @org.junit.Test
-    public void register() throws Exception {
-        sc.register(clientCert);
+        try {
+            sc.register(clientCert);
+        }catch (UserAlreadyRegisteredException e){
+            //Ignore it if the user is already registered
+        }
     }
 
     @org.junit.Test
