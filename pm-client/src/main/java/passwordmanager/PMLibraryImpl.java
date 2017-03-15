@@ -11,6 +11,7 @@ import passwordmanager.exceptions.*;
 
 import java.nio.ByteBuffer;
 import java.security.*;
+import java.security.cert.CertificateException;
 import java.util.Scanner;
 import java.rmi.RemoteException;
 
@@ -133,7 +134,7 @@ public class PMLibraryImpl implements  PMLibrary{
             PasswordResponse passwordResponse;
             passwordResponse = pm.get(nounce, state.getClientCertificate(), cipheredDomain, cipheredUsername, signature);
 
-            return passwordResponse.password;
+            return Cryptography.asymmetricDecipher(passwordResponse.password, clientKey);
         }catch(HandshakeFailedException e){
             throw new LibraryOperationException("Failure in server handshaking", e);
         }catch(ServerAuthenticationException e){
@@ -156,6 +157,9 @@ public class PMLibraryImpl implements  PMLibrary{
             throw new LibraryOperationException("User is not registered", e);
         }catch(PasswordNotFoundException e){
             throw new LibraryOperationException("Password not found", e);
+        }catch(FailedToDecryptException e){
+            System.out.println(e.toString());
+            throw new LibraryOperationException(e.toString(), e);
         }
     }
 
@@ -184,6 +188,7 @@ public class PMLibraryImpl implements  PMLibrary{
             throw new SessionNotInitializedException("Session not yet initialized");
     }
 
-
-
+    public ConnectionState getState() {
+        return state;
+    }
 }

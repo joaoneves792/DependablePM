@@ -1,5 +1,6 @@
 package passwordmanager;
 
+import Crypto.Cryptography;
 import Crypto.exceptions.FailedToRetrieveKeyException;
 import passwordmanager.exception.LibraryInitializationException;
 import passwordmanager.exception.LibraryOperationException;
@@ -100,9 +101,9 @@ public class LibraryTest {
 
         // Get a password
         byte[] receivedPassword = lib.retrieve_password(domain, username);
-        System.out.println(new String(receivedPassword));
-        System.out.println(new String(password));
-        assertEquals(password, receivedPassword);
+        String passwordReceived = new String(receivedPassword);
+        String passwordSent = new String(password);
+        assertEquals(passwordSent, passwordReceived);
     }
 
 
@@ -160,6 +161,19 @@ public class LibraryTest {
     }
 
     @org.junit.Test(expected = LibraryOperationException.class)
+    public void failSaveWrongPassword() throws RemoteException, LibraryOperationException{
+        // Initialize library
+        lib.init(CLIENT_RIGHT_KEYSTORE, WRONG_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, WRONG_PRIVATEKEY_ALIAS);
+
+        // Save a password
+        // If password provided for the certificate is wrong
+        byte[] domain = RIGHT_DOMAIN.getBytes();
+        byte[] password = RIGHT_PASSWORD.getBytes();
+        byte[] username = RIGHT_USERNAME.getBytes();
+        lib.save_password(domain, username, password);
+    }
+
+    @org.junit.Test(expected = LibraryOperationException.class)
     public void failSaveWrongPrivKeyPassword() throws RemoteException, LibraryOperationException{
         // Initialize library
         lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
@@ -171,13 +185,12 @@ public class LibraryTest {
         lib.save_password(domain, username, password);
 
         // Initialize library
-        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, WRONG_PRIVATEKEY_ALIAS);
+        lib.init(CLIENT_RIGHT_KEYSTORE, WRONG_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
 
         // Get a password
         byte[] receivedPassword = lib.retrieve_password(domain, username);
         assertEquals(password, receivedPassword);
     }
-
 
     @org.junit.Test(expected = SessionNotInitializedException.class)
     public void unintializedSessionWithPut() throws RemoteException, LibraryOperationException{
@@ -195,5 +208,71 @@ public class LibraryTest {
     public void unitializedSessionWithRegister() throws RemoteException, LibraryOperationException{
         lib.close();
         lib.register_user();
+    }
+
+    @org.junit.Test(expected = LibraryOperationException.class)
+    public void failRetrievePasswordWrongPassword() throws RemoteException, LibraryOperationException{
+        // Initialize library
+        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
+
+        // Save correctly a password
+        byte[] domain = RIGHT_DOMAIN.getBytes();
+        byte[] password = RIGHT_PASSWORD.getBytes();
+        byte[] username = RIGHT_USERNAME.getBytes();
+        lib.save_password(domain, username, password);
+
+        // Now someone tries to ask for a password with invalid certificate values
+        // In this case, the certificate is valid but the password for the private key isn't
+        lib.init(CLIENT_RIGHT_KEYSTORE, WRONG_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
+
+        // Get a password
+        byte[] receivedPassword = lib.retrieve_password(domain, username);
+        String passwordReceived = new String(receivedPassword);
+        String passwordSent = new String(password);
+        assertEquals(passwordSent, passwordReceived);
+    }
+
+    @org.junit.Test(expected = LibraryOperationException.class)
+    public void failRetrievePasswordWrongCertAlias() throws RemoteException, LibraryOperationException{
+        // Initialize library
+        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
+
+        // Save correctly a password
+        byte[] domain = RIGHT_DOMAIN.getBytes();
+        byte[] password = RIGHT_PASSWORD.getBytes();
+        byte[] username = RIGHT_USERNAME.getBytes();
+        lib.save_password(domain, username, password);
+
+        // Now someone tries to ask for a password with invalid certificate values
+        // In this case, the certificate is valid but the password for the private key isn't
+        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, WRONG_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
+
+        // Get a password
+        byte[] receivedPassword = lib.retrieve_password(domain, username);
+        String passwordReceived = new String(receivedPassword);
+        String passwordSent = new String(password);
+        assertEquals(passwordSent, passwordReceived);
+    }
+
+    @org.junit.Test(expected = LibraryOperationException.class)
+    public void failRetrievePasswordWrongPrivKeyAlias() throws RemoteException, LibraryOperationException{
+        // Initialize library
+        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
+
+        // Save correctly a password
+        byte[] domain = RIGHT_DOMAIN.getBytes();
+        byte[] password = RIGHT_PASSWORD.getBytes();
+        byte[] username = RIGHT_USERNAME.getBytes();
+        lib.save_password(domain, username, password);
+
+        // Now someone tries to ask for a password with invalid certificate values
+        // In this case, the certificate is valid but the alias for the private key isn't
+        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, WRONG_PRIVATEKEY_ALIAS);
+
+        // Get a password
+        byte[] receivedPassword = lib.retrieve_password(domain, username);
+        String passwordReceived = new String(receivedPassword);
+        String passwordSent = new String(password);
+        assertEquals(passwordSent, passwordReceived);
     }
 }
