@@ -2,6 +2,8 @@ package passwordmanager;
 
 import Crypto.Cryptography;
 import Crypto.exceptions.FailedToRetrieveKeyException;
+import mockit.Expectations;
+import mockit.Mocked;
 import passwordmanager.exception.LibraryInitializationException;
 import passwordmanager.exception.LibraryOperationException;
 import passwordmanager.exception.SessionNotInitializedException;
@@ -64,6 +66,7 @@ public class LibraryTest {
             // Ignore and don't do anything
         }
     }
+
 
     /*-------------------------------------------------------------------------------------
     START OF POSITIVE TESTING
@@ -275,4 +278,5 @@ public class LibraryTest {
         String passwordSent = new String(password);
         assertEquals(passwordSent, passwordReceived);
     }
+
 }
