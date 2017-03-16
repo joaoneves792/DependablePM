@@ -26,7 +26,11 @@ public class UserData {
     }
 
     public void storePassword(byte[] domain, byte[] username, byte[] password, byte[] signature){
-        Password pw = new Password(Cryptography.encodeForStorage(domain), Cryptography.encodeForStorage(username), Cryptography.encodeForStorage(password),Cryptography.encodeForStorage(signature));
+        Password pw = new Password(Cryptography.encodeForStorage(domain), Cryptography.encodeForStorage(username), Cryptography.encodeForStorage(password), Cryptography.encodeForStorage(signature));
+
+        Password oldPass = getPassword(domain, username);
+        if(null != oldPass)
+            _passwordList.remove(oldPass);
         _passwordList.add(pw);
     }
 

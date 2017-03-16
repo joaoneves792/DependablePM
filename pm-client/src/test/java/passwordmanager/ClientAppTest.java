@@ -26,6 +26,7 @@ public class ClientAppTest {
     private static final String SERVERCERT = "dependablepmserver";
 
     private static final String PASSWORD_TO_STORE = "strongpassword12345";
+    private static final String PASSWORD_TO_OVERWRITE = "weakpassword54321";
     private static final String DOMAIN = "fenix.tecnico.ulisboa.pt";
     private static final String USERNAME = "ist170666";
 
@@ -149,9 +150,58 @@ public class ClientAppTest {
         int decipheredResponse = ByteBuffer.wrap(Cryptography.asymmetricDecipher(response, serverCert.getPublicKey())).getInt();
         assertEquals(myNounce+1, decipheredResponse);
 
-        sc.get(nonce, clientCert, domain, username, signature);
+        PasswordResponse pw = sc.get(nonce, clientCert, domain, username, signature);
+        assertEquals(PASSWORD_TO_STORE , new String(Cryptography.asymmetricDecipher(pw.password, clientKey)));
     }
 
+    @org.junit.Test
+    public void putOverwrite() throws Exception {
+        put();
+
+        byte[] nonce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(sc.getServerNonce()+1).array(), clientKey);
+        byte[] username = Cryptography.hash(USERNAME.getBytes());
+        byte[] domain = Cryptography.hash(DOMAIN.getBytes());
+        byte[] password = Cryptography.asymmetricCipher(PASSWORD_TO_OVERWRITE.getBytes(), clientCert.getPublicKey());
+
+        byte[] userdata = new byte[domain.length+username.length+password.length];
+        System.arraycopy(domain, 0, userdata, 0, domain.length);
+        System.arraycopy(username, 0, userdata, domain.length, username.length);
+        System.arraycopy(password, 0, userdata, domain.length+username.length, password.length);
+
+        byte[] signature = Cryptography.sign(userdata, clientKey);
+
+
+        int myNounce = new SecureRandom().nextInt();
+        byte[] response = sc.handshake(myNounce);
+
+        int decipheredResponse = ByteBuffer.wrap(Cryptography.asymmetricDecipher(response, serverCert.getPublicKey())).getInt();
+        assertEquals(myNounce+1, decipheredResponse);
+
+        sc.put(nonce,domain,username,password,clientCert, signature);
+
+        int nonce2 = sc.getServerNonce()+1;
+        username = Cryptography.hash(USERNAME.getBytes());
+        domain = Cryptography.hash(DOMAIN.getBytes());
+
+        byte[] nonceBytes = ByteBuffer.allocate(NONCE_SIZE).putInt(nonce2).array();
+
+        userdata = new byte[domain.length+username.length+NONCE_SIZE];
+        System.arraycopy(domain, 0, userdata, 0, domain.length);
+        System.arraycopy(username, 0, userdata, domain.length, username.length);
+        System.arraycopy(nonceBytes, 0, userdata, domain.length+username.length, NONCE_SIZE);
+
+        signature = Cryptography.sign(userdata, clientKey);
+
+
+        myNounce = new SecureRandom().nextInt();
+        response = sc.handshake(myNounce);
+
+        decipheredResponse = ByteBuffer.wrap(Cryptography.asymmetricDecipher(response, serverCert.getPublicKey())).getInt();
+        assertEquals(myNounce+1, decipheredResponse);
+
+        PasswordResponse pw = sc.get(nonce2, clientCert, domain, username, signature);
+        assertEquals(PASSWORD_TO_OVERWRITE , new String(Cryptography.asymmetricDecipher(pw.password, clientKey)));
+    }
     /*-------------------------------------------------------------------------------------
     START OF NEGATIVE TESTING
     -------------------------------------------------------------------------------------*/
