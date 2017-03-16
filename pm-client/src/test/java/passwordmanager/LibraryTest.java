@@ -83,7 +83,7 @@ public class LibraryTest {
 
         // Save a password
         byte[] domain = RIGHT_DOMAIN.getBytes();
-        byte[] password = RIGHT_PASSWORD.getBytes();
+        byte[] password = RIGHT_PASSWORD_TO_STORE.getBytes();
         byte[] username = RIGHT_USERNAME.getBytes();
         lib.save_password(domain, username, password);
     }
@@ -95,7 +95,7 @@ public class LibraryTest {
 
         // Save a password
         byte[] domain = RIGHT_DOMAIN.getBytes();
-        byte[] password = RIGHT_PASSWORD.getBytes();
+        byte[] password = RIGHT_PASSWORD_TO_STORE.getBytes();
         byte[] username = RIGHT_USERNAME.getBytes();
         lib.save_password(domain, username, password);
 
@@ -232,7 +232,7 @@ public class LibraryTest {
         assertEquals(passwordSent, passwordReceived);
     }
 
-    @org.junit.Test(expected = LibraryOperationException.class)
+    @org.junit.Test(expected = LibraryInitializationException.class)
     public void failRetrievePasswordWrongCertAlias() throws RemoteException, LibraryOperationException{
         // Initialize library
         lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);

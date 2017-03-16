@@ -3,6 +3,7 @@ package passwordmanager;
 import Crypto.Cryptography;
 import passwordmanager.exceptions.AuthenticationFailureException;
 import passwordmanager.exceptions.HandshakeFailedException;
+import passwordmanager.exceptions.UserAlreadyRegisteredException;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -48,6 +49,12 @@ public class ClientAppTest {
         clientCert = (X509Certificate)ks.getCertificate(MYCERT);
         serverCert = (X509Certificate)ks.getCertificate(SERVERCERT);
         sc = pm.connect();
+
+        try{
+            sc.register(clientCert);
+        }catch (UserAlreadyRegisteredException e){
+            //Ignore we only want to actually register the first time it runs
+        }
     }
 
 
@@ -72,11 +79,6 @@ public class ClientAppTest {
     /*-------------------------------------------------------------------------------------
     START OF POSITIVE TESTING
     -------------------------------------------------------------------------------------*/
-
-    @org.junit.Test
-    public void register() throws Exception {
-        sc.register(clientCert);
-    }
 
     @org.junit.Test
     public void handshake() throws Exception {
@@ -121,6 +123,8 @@ public class ClientAppTest {
 
     @org.junit.Test
     public void get() throws Exception {
+        put();
+
         int nonce = sc.getServerNonce()+1;
         byte[] username = Cryptography.hash(USERNAME.getBytes());
         byte[] domain = Cryptography.hash(DOMAIN.getBytes());
