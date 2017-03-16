@@ -22,6 +22,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * Created by goncalo on 07-03-2017.
@@ -107,6 +108,36 @@ public class LibraryTest {
         String passwordReceived = new String(receivedPassword);
         String passwordSent = new String(password);
         assertEquals(passwordSent, passwordReceived);
+    }
+
+    @org.junit.Test
+    public void sequentialPasswordWriting() throws RemoteException, LibraryOperationException{
+        // The purpose of this test is to write two consequential passwords to the server
+        // When we retrieve the password it must be equal to the last inserted password
+
+        // Initialize library
+        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
+
+        // Save correctly a password
+        byte[] domain = RIGHT_DOMAIN.getBytes();
+        byte[] password = RIGHT_PASSWORD.getBytes();
+        byte[] username = RIGHT_USERNAME.getBytes();
+        lib.save_password(domain, username, password);
+
+        // Save correctly another password
+        domain = RIGHT_DOMAIN.getBytes();
+        byte[] password2 = RIGHT_PASSWORD_TO_STORE.getBytes();
+        username = RIGHT_USERNAME.getBytes();
+        lib.save_password(domain, username, password);
+
+        // Get a password
+        byte[] receivedPassword = lib.retrieve_password(domain, username);
+        String passwordReceived = new String(receivedPassword);
+        String passwordSent = new String(password);
+        String passwordSent2 = new String(password2);
+        
+        assertEquals(passwordSent, passwordReceived);
+        assertNotEquals(passwordSent2, passwordReceived);
     }
 
 
@@ -247,7 +278,7 @@ public class LibraryTest {
         lib.save_password(domain, username, password);
 
         // Now someone tries to ask for a password with invalid certificate values
-        // In this case, the certificate is valid but the password for the private key isn't
+        // In this case, the certificate is valid but the server certificate alias is wrong
         lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, WRONG_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
 
         // Get a password

@@ -114,7 +114,7 @@ public class PMLibraryImpl implements  PMLibrary{
             checkSession();
             
             // First authenticate server
-            authenticateServer();
+            int inicialNounce = authenticateServer();
 
             // Prepare arguments
             byte[] cipheredUsername = Cryptography.hash(username);
@@ -132,7 +132,13 @@ public class PMLibraryImpl implements  PMLibrary{
 
             // Make get request
             PasswordResponse passwordResponse;
+
             passwordResponse = pm.get(nounce, state.getClientCertificate(), cipheredDomain, cipheredUsername, signature);
+
+            byte[] decipheredNounceByte = Cryptography.asymmetricDecipher(passwordResponse.nonce, state.getServerCertificate().getPublicKey());
+            int passwordResponseNounce = ByteBuffer.wrap(decipheredNounceByte).getInt();
+            if(passwordResponseNounce != inicialNounce + 2)
+                throw new LibraryOperationException("Server authentication issue...");
 
             return Cryptography.asymmetricDecipher(passwordResponse.password, clientKey);
         }catch(HandshakeFailedException e){
@@ -168,7 +174,7 @@ public class PMLibraryImpl implements  PMLibrary{
         state = null;
     }
 
-    public void authenticateServer() throws ServerAuthenticationException, RemoteException, LibraryOperationException{
+    public int authenticateServer() throws ServerAuthenticationException, RemoteException, LibraryOperationException{
         try{
             int myNounce = new SecureRandom().nextInt();
             byte[] response = pm.handshake(myNounce);
@@ -176,6 +182,7 @@ public class PMLibraryImpl implements  PMLibrary{
             if(myNounce+1 != decipheredResponse){
                 throw new ServerAuthenticationException("Server challenge not surpassed");
             }
+            return myNounce;
         }catch(HandshakeFailedException e){
             throw new LibraryOperationException("Failure authenticating server", e);
         }catch(FailedToDecryptException e){
