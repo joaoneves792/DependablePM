@@ -135,7 +135,7 @@ public class LibraryTest {
         String passwordReceived = new String(receivedPassword);
         String passwordSent = new String(password);
         String passwordSent2 = new String(password2);
-        
+
         assertEquals(passwordSent, passwordReceived);
         assertNotEquals(passwordSent2, passwordReceived);
     }
