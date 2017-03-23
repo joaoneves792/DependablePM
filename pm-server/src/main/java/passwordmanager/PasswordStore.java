@@ -33,12 +33,12 @@ public class PasswordStore {
 
     }
 
-    public Password getPassword(PublicKey pubKey, byte[] domain, byte[] username)throws UserNotRegisteredException, PasswordNotFoundException{
+    public Password getPassword(PublicKey pubKey, byte[] domainUsernameHash)throws UserNotRegisteredException, PasswordNotFoundException{
         UserData userData = _data.get(Cryptography.encodeForStorage(pubKey.getEncoded()));
         if(null == userData){
             throw new UserNotRegisteredException("User with this public key is not yet registered");
         }
-        Password pw = userData.getPassword(domain, username);
+        Password pw = userData.getPassword(domainUsernameHash);
         if(null == pw){
             throw new PasswordNotFoundException("There is no password for this domain+username pair for this user");
         }
@@ -46,13 +46,13 @@ public class PasswordStore {
         return pw;
     }
 
-    public void storePassword(PublicKey pubKey, byte[] domain, byte[] username, byte[] password, byte[] signature)throws UserNotRegisteredException{
+    public void storePassword(PublicKey pubKey, byte[] domainUsernameHash, byte[] password, byte[] signature)throws UserNotRegisteredException{
         UserData userData = _data.get(Cryptography.encodeForStorage(pubKey.getEncoded()));
         if(null == userData){
             throw new UserNotRegisteredException("User with this public key is not yet registered");
         }
 
-        userData.storePassword(domain, username, password, signature);
+        userData.storePassword(domainUsernameHash, password, signature);
     }
 
 

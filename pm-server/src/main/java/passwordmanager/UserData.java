@@ -15,20 +15,19 @@ public class UserData {
         _passwordList = new LinkedList<>();
     }
 
-    public Password getPassword(byte[] domain, byte[] username){
-        String base64Domain = Cryptography.encodeForStorage(domain);
-        String base64username = Cryptography.encodeForStorage(username);
+    public Password getPassword(byte[] domainUsernameHash){
+        String base64DomainUsername = Cryptography.encodeForStorage(domainUsernameHash);
         for (Password pw : _passwordList) {
-            if(pw.checkMatch(base64Domain, base64username))
+            if(pw.checkMatch(base64DomainUsername))
                 return pw;
         }
         return null;
     }
 
-    public void storePassword(byte[] domain, byte[] username, byte[] password, byte[] signature){
-        Password pw = new Password(Cryptography.encodeForStorage(domain), Cryptography.encodeForStorage(username), Cryptography.encodeForStorage(password), Cryptography.encodeForStorage(signature));
+    public void storePassword(byte[] domainUsernameHash, byte[] password, byte[] signature){
+        Password pw = new Password(Cryptography.encodeForStorage(domainUsernameHash), Cryptography.encodeForStorage(password), Cryptography.encodeForStorage(signature));
 
-        Password oldPass = getPassword(domain, username);
+        Password oldPass = getPassword(domainUsernameHash);
         if(null != oldPass)
             _passwordList.remove(oldPass);
         _passwordList.add(pw);

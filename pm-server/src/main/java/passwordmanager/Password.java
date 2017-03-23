@@ -7,18 +7,14 @@ import Crypto.Cryptography;
  */
 public class Password {
 
-    private final String _domain;
-    private final String _username;
+    private final String _domainUsernameHash;
     private final String _password;
     private final String _signature;
 
-    public byte[] get_domain() {
-        return Cryptography.decodeFromStorage(_domain);
+    public byte[] get_domainUsernameHash() {
+        return Cryptography.decodeFromStorage(_domainUsernameHash);
     }
 
-    public byte[] get_username() {
-        return Cryptography.decodeFromStorage(_username);
-    }
 
     public byte[] get_password() {
         return Cryptography.decodeFromStorage(_password);
@@ -28,14 +24,13 @@ public class Password {
         return Cryptography.decodeFromStorage(_signature);
     }
 
-    Password(String domain, String username, String password, String signature){
-        _domain = domain;
-        _username = username;
+    Password(String domainUsernameHash, String password, String signature){
+        _domainUsernameHash = domainUsernameHash;
         _password = password;
         _signature = signature;
     }
 
-    public Boolean checkMatch(String domain, String username){
-        return (domain.equals(_domain) &&  username.equals(_username) );
+    public Boolean checkMatch(String domainUsernameHash){
+        return (domainUsernameHash.equals(_domainUsernameHash));
     }
 }

@@ -12,8 +12,8 @@ public interface ServerConnectionInterface extends Remote {
 	byte[] handshake(int clientNonce) throws RemoteException, HandshakeFailedException;
 	int getServerNonce() throws RemoteException;
 
-	void put(byte[] nonce, byte[] domain, byte[] username, byte[] password, X509Certificate clientCert, byte[] signature)throws RemoteException, HandshakeFailedException, AuthenticationFailureException, UserNotRegisteredException;
+	void put(byte[] nonce, byte[] domainUsernameHash, byte[] password, X509Certificate clientCert, byte[] signature)throws RemoteException, HandshakeFailedException, AuthenticationFailureException, UserNotRegisteredException;
 
-	PasswordResponse get(int nonce, X509Certificate clientCert, byte[] domain, byte[] username, byte[] signature)throws RemoteException, HandshakeFailedException, AuthenticationFailureException, UserNotRegisteredException, PasswordNotFoundException, StorageFailureException;
+	PasswordResponse get(int nonce, X509Certificate clientCert, byte[] domainUsernameHash, byte[] signature)throws RemoteException, HandshakeFailedException, AuthenticationFailureException, UserNotRegisteredException, PasswordNotFoundException, StorageFailureException;
 }
  

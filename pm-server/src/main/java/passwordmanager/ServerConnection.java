@@ -58,7 +58,7 @@ public class ServerConnection extends UnicastRemoteObject implements ServerConne
 		return _serverNonce;
 	}
 
-	public void put(byte[] nonce, byte[] domain, byte[] username, byte[] password, X509Certificate clientCert, byte[] signature)throws RemoteException, HandshakeFailedException, AuthenticationFailureException, UserNotRegisteredException{
+	public void put(byte[] nonce, byte[] domainUsernameHash, byte[] password, X509Certificate clientCert, byte[] signature)throws RemoteException, HandshakeFailedException, AuthenticationFailureException, UserNotRegisteredException{
 		if (!_serverAuthenticationDone){
 			throw new HandshakeFailedException("Handshake has not been successfully performed yet!");
 		}
@@ -78,10 +78,9 @@ public class ServerConnection extends UnicastRemoteObject implements ServerConne
 		}
 
         /*Now we make sure the message has not been tampered with!*/
-		byte[] userdata = new byte[domain.length+username.length+password.length];
-		System.arraycopy(domain, 0, userdata, 0, domain.length);
-		System.arraycopy(username, 0, userdata, domain.length, username.length);
-		System.arraycopy(password, 0, userdata, domain.length+username.length, password.length);
+		byte[] userdata = new byte[domainUsernameHash.length+password.length];
+		System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
+		System.arraycopy(password, 0, userdata, domainUsernameHash.length, password.length);
 
 		try {
 			Cryptography.verifySignature(userdata, signature, clientPubKey);
@@ -89,10 +88,10 @@ public class ServerConnection extends UnicastRemoteObject implements ServerConne
 			throw new AuthenticationFailureException("Failed to verify clients signature!", e);
 		}
 
-		PasswordStore.getInstance().storePassword(clientPubKey, domain,username, password, signature);
+		PasswordStore.getInstance().storePassword(clientPubKey, domainUsernameHash, password, signature);
 	}
 
-	public PasswordResponse get(int nonce, X509Certificate clientCert, byte[] domain, byte[] username, byte[] signature)throws RemoteException, HandshakeFailedException, AuthenticationFailureException, UserNotRegisteredException, PasswordNotFoundException, StorageFailureException{
+	public PasswordResponse get(int nonce, X509Certificate clientCert, byte[] domainUsernameHash, byte[] signature)throws RemoteException, HandshakeFailedException, AuthenticationFailureException, UserNotRegisteredException, PasswordNotFoundException, StorageFailureException{
 		if (!_serverAuthenticationDone){
 			throw new HandshakeFailedException("Handshake has not been successfully performed yet!");
 		}
@@ -109,22 +108,20 @@ public class ServerConnection extends UnicastRemoteObject implements ServerConne
 
 		byte[] nonceBytes = ByteBuffer.allocate(NONCE_SIZE).putInt(nonce).array();
 
-		byte[] userdata = new byte[domain.length+username.length+NONCE_SIZE];
-		System.arraycopy(domain, 0, userdata, 0, domain.length);
-		System.arraycopy(username, 0, userdata, domain.length, username.length);
-		System.arraycopy(nonceBytes, 0, userdata, domain.length+username.length, NONCE_SIZE);
+		byte[] userdata = new byte[domainUsernameHash.length+NONCE_SIZE];
+		System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
+		System.arraycopy(nonceBytes, 0, userdata, domainUsernameHash.length, NONCE_SIZE);
 		try {
 			Cryptography.verifySignature(userdata, signature, clientPubKey);
 		}catch (FailedToVerifySignatureException | InvalidSignatureException e){
 			throw new AuthenticationFailureException("Failed to verify clients signature!", e);
 		}
 
-		Password pw = PasswordStore.getInstance().getPassword(clientPubKey,domain, username);
+		Password pw = PasswordStore.getInstance().getPassword(clientPubKey, domainUsernameHash);
         /*Now we make sure the storage has not been tampered with!*/
-		byte[] storeduserdata = new byte[pw.get_domain().length+pw.get_username().length+pw.get_password().length];
-		System.arraycopy(pw.get_domain(), 0, storeduserdata, 0, pw.get_domain().length);
-		System.arraycopy(pw.get_username(), 0, storeduserdata, pw.get_domain().length, pw.get_username().length);
-		System.arraycopy(pw.get_password(), 0, storeduserdata, pw.get_domain().length+pw.get_username().length, pw.get_password().length);
+		byte[] storeduserdata = new byte[pw.get_domainUsernameHash().length+pw.get_password().length];
+		System.arraycopy(pw.get_domainUsernameHash(), 0, storeduserdata, 0, pw.get_domainUsernameHash().length);
+		System.arraycopy(pw.get_password(), 0, storeduserdata, pw.get_domainUsernameHash().length, pw.get_password().length);
 
 		try {
 			Cryptography.verifySignature(storeduserdata, pw.get_signature(), clientPubKey);
