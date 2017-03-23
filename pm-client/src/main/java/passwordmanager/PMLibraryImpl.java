@@ -69,20 +69,21 @@ public class PMLibraryImpl implements  PMLibrary{
             PrivateKey clientKey = state.getKeyManager().getPrivateKey(state.getPrivKeyAlias());
             byte[] nounce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(pm.getServerNonce()+1).array(), clientKey);
 
-            byte[] cipheredUsername = Cryptography.hash(username);
-            byte[] cipheredDomain = Cryptography.hash(domain);
+            byte[] domainUsername = new byte[domain.length+username.length];
+            System.arraycopy(domain, 0, domainUsername,0, domain.length);
+            System.arraycopy(username, 0, domainUsername, domain.length, username.length);
+
+            byte[] hashedDomainUsername = Cryptography.hash(domainUsername);
             byte[] cipheredPassword = Cryptography.asymmetricCipher(password, state.getClientCertificate().getPublicKey());
 
             // Prepare signature of arguments
-            byte[] userdata = new byte[cipheredDomain.length+cipheredUsername.length+cipheredPassword.length];
-            System.arraycopy(cipheredDomain, 0, userdata, 0, cipheredDomain.length);
-            System.arraycopy(cipheredUsername, 0, userdata, cipheredDomain.length, cipheredUsername.length);
-            System.arraycopy(cipheredPassword, 0, userdata, cipheredDomain.length+cipheredUsername.length,
-                    cipheredPassword.length);
+            byte[] userdata = new byte[hashedDomainUsername.length+cipheredPassword.length];
+            System.arraycopy(hashedDomainUsername, 0, userdata, 0, hashedDomainUsername.length);
+            System.arraycopy(cipheredPassword, 0, userdata, hashedDomainUsername.length, cipheredPassword.length);
             byte[] signature = Cryptography.sign(userdata, clientKey);
 
             // Send request to server
-            pm.put(nounce, cipheredDomain, cipheredUsername, cipheredPassword, state.getClientCertificate(), signature);
+            pm.put(nounce, hashedDomainUsername, cipheredPassword, state.getClientCertificate(), signature);
 
 
         }catch(NoSuchAlgorithmException e){
@@ -117,15 +118,17 @@ public class PMLibraryImpl implements  PMLibrary{
             int inicialNounce = authenticateServer();
 
             // Prepare arguments
-            byte[] cipheredUsername = Cryptography.hash(username);
-            byte[] cipheredDomain = Cryptography.hash(domain);
             int nounce = pm.getServerNonce()+1; // Why not to cipher the nounce like we do in put?
             byte[] nounceBytes = ByteBuffer.allocate(NONCE_SIZE).putInt(nounce).array();
 
-            byte[] userdata = new byte[cipheredDomain.length+cipheredUsername.length+NONCE_SIZE];
-            System.arraycopy(cipheredDomain, 0, userdata, 0, cipheredDomain.length);
-            System.arraycopy(cipheredUsername, 0, userdata, cipheredDomain.length, cipheredUsername.length);
-            System.arraycopy(nounceBytes, 0, userdata, cipheredDomain.length+cipheredUsername.length, NONCE_SIZE);
+            byte[] domainUsername = new byte[domain.length+username.length];
+            System.arraycopy(domain, 0, domainUsername,0, domain.length);
+            System.arraycopy(username, 0, domainUsername, domain.length, username.length);
+            byte[] hashedDomainUsername = Cryptography.hash(domainUsername);
+
+            byte[] userdata = new byte[hashedDomainUsername.length+NONCE_SIZE];
+            System.arraycopy(hashedDomainUsername, 0, userdata, 0, hashedDomainUsername.length);
+            System.arraycopy(nounceBytes, 0, userdata, hashedDomainUsername.length, NONCE_SIZE);
 
             PrivateKey clientKey = state.getKeyManager().getPrivateKey(state.getPrivKeyAlias());
             byte[] signature = Cryptography.sign(userdata, clientKey);
@@ -133,7 +136,7 @@ public class PMLibraryImpl implements  PMLibrary{
             // Make get request
             PasswordResponse passwordResponse;
 
-            passwordResponse = pm.get(nounce, state.getClientCertificate(), cipheredDomain, cipheredUsername, signature);
+            passwordResponse = pm.get(nounce, state.getClientCertificate(), hashedDomainUsername, signature);
 
             byte[] decipheredNounceByte = Cryptography.asymmetricDecipher(passwordResponse.nonce, state.getServerCertificate().getPublicKey());
             int passwordResponseNounce = ByteBuffer.wrap(decipheredNounceByte).getInt();

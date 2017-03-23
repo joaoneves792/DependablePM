@@ -102,16 +102,12 @@ public class ClientAppTest {
     @org.junit.Test
     public void put() throws Exception {
         byte[] nonce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(sc.getServerNonce()+1).array(), clientKey);
-        //byte[] username = Cryptography.asymmetricCipher(USERNAME.getBytes(), clientCert.getPublicKey());
-        //byte[] domain = Cryptography.asymmetricCipher(DOMAIN.getBytes(), clientCert.getPublicKey());
-        byte[] username = Cryptography.hash(USERNAME.getBytes());
-        byte[] domain = Cryptography.hash(DOMAIN.getBytes());
+        byte[] domainUsernameHash = Cryptography.hash((DOMAIN+USERNAME).getBytes());
         byte[] password = Cryptography.asymmetricCipher(PASSWORD_TO_STORE.getBytes(), clientCert.getPublicKey());
 
-        byte[] userdata = new byte[domain.length+username.length+password.length];
-        System.arraycopy(domain, 0, userdata, 0, domain.length);
-        System.arraycopy(username, 0, userdata, domain.length, username.length);
-        System.arraycopy(password, 0, userdata, domain.length+username.length, password.length);
+        byte[] userdata = new byte[domainUsernameHash.length+password.length];
+        System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
+        System.arraycopy(password, 0, userdata, domainUsernameHash.length, password.length);
 
         byte[] signature = Cryptography.sign(userdata, clientKey);
 
@@ -122,8 +118,7 @@ public class ClientAppTest {
         int decipheredResponse = ByteBuffer.wrap(Cryptography.asymmetricDecipher(response, serverCert.getPublicKey())).getInt();
         assertEquals(myNounce+1, decipheredResponse);
 
-        sc.put(nonce,domain,username,password,clientCert, signature);
-
+        sc.put(nonce,domainUsernameHash,password,clientCert, signature);
     }
 
     @org.junit.Test
@@ -131,15 +126,13 @@ public class ClientAppTest {
         put();
 
         int nonce = sc.getServerNonce()+1;
-        byte[] username = Cryptography.hash(USERNAME.getBytes());
-        byte[] domain = Cryptography.hash(DOMAIN.getBytes());
+        byte[] domainUsernameHash = Cryptography.hash((DOMAIN+USERNAME).getBytes());
 
         byte[] nonceBytes = ByteBuffer.allocate(NONCE_SIZE).putInt(nonce).array();
 
-        byte[] userdata = new byte[domain.length+username.length+NONCE_SIZE];
-        System.arraycopy(domain, 0, userdata, 0, domain.length);
-        System.arraycopy(username, 0, userdata, domain.length, username.length);
-        System.arraycopy(nonceBytes, 0, userdata, domain.length+username.length, NONCE_SIZE);
+        byte[] userdata = new byte[domainUsernameHash.length+NONCE_SIZE];
+        System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
+        System.arraycopy(nonceBytes, 0, userdata, domainUsernameHash.length, NONCE_SIZE);
 
         byte[] signature = Cryptography.sign(userdata, clientKey);
 
@@ -150,7 +143,7 @@ public class ClientAppTest {
         int decipheredResponse = ByteBuffer.wrap(Cryptography.asymmetricDecipher(response, serverCert.getPublicKey())).getInt();
         assertEquals(myNounce+1, decipheredResponse);
 
-        PasswordResponse pw = sc.get(nonce, clientCert, domain, username, signature);
+        PasswordResponse pw = sc.get(nonce, clientCert, domainUsernameHash, signature);
         assertEquals(PASSWORD_TO_STORE , new String(Cryptography.asymmetricDecipher(pw.password, clientKey)));
     }
 
@@ -159,14 +152,12 @@ public class ClientAppTest {
         put();
 
         byte[] nonce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(sc.getServerNonce()+1).array(), clientKey);
-        byte[] username = Cryptography.hash(USERNAME.getBytes());
-        byte[] domain = Cryptography.hash(DOMAIN.getBytes());
+        byte[] domainUsernameHash = Cryptography.hash((DOMAIN+USERNAME).getBytes());
         byte[] password = Cryptography.asymmetricCipher(PASSWORD_TO_OVERWRITE.getBytes(), clientCert.getPublicKey());
 
-        byte[] userdata = new byte[domain.length+username.length+password.length];
-        System.arraycopy(domain, 0, userdata, 0, domain.length);
-        System.arraycopy(username, 0, userdata, domain.length, username.length);
-        System.arraycopy(password, 0, userdata, domain.length+username.length, password.length);
+        byte[] userdata = new byte[domainUsernameHash.length+password.length];
+        System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
+        System.arraycopy(password, 0, userdata, domainUsernameHash.length, password.length);
 
         byte[] signature = Cryptography.sign(userdata, clientKey);
 
@@ -177,18 +168,15 @@ public class ClientAppTest {
         int decipheredResponse = ByteBuffer.wrap(Cryptography.asymmetricDecipher(response, serverCert.getPublicKey())).getInt();
         assertEquals(myNounce+1, decipheredResponse);
 
-        sc.put(nonce,domain,username,password,clientCert, signature);
+        sc.put(nonce,domainUsernameHash,password,clientCert, signature);
 
         int nonce2 = sc.getServerNonce()+1;
-        username = Cryptography.hash(USERNAME.getBytes());
-        domain = Cryptography.hash(DOMAIN.getBytes());
 
         byte[] nonceBytes = ByteBuffer.allocate(NONCE_SIZE).putInt(nonce2).array();
 
-        userdata = new byte[domain.length+username.length+NONCE_SIZE];
-        System.arraycopy(domain, 0, userdata, 0, domain.length);
-        System.arraycopy(username, 0, userdata, domain.length, username.length);
-        System.arraycopy(nonceBytes, 0, userdata, domain.length+username.length, NONCE_SIZE);
+        userdata = new byte[domainUsernameHash.length+NONCE_SIZE];
+        System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
+        System.arraycopy(nonceBytes, 0, userdata, domainUsernameHash.length, NONCE_SIZE);
 
         signature = Cryptography.sign(userdata, clientKey);
 
@@ -199,7 +187,7 @@ public class ClientAppTest {
         decipheredResponse = ByteBuffer.wrap(Cryptography.asymmetricDecipher(response, serverCert.getPublicKey())).getInt();
         assertEquals(myNounce+1, decipheredResponse);
 
-        PasswordResponse pw = sc.get(nonce2, clientCert, domain, username, signature);
+        PasswordResponse pw = sc.get(nonce2, clientCert, domainUsernameHash, signature);
         assertEquals(PASSWORD_TO_OVERWRITE , new String(Cryptography.asymmetricDecipher(pw.password, clientKey)));
     }
     /*-------------------------------------------------------------------------------------
@@ -208,51 +196,46 @@ public class ClientAppTest {
 
     @org.junit.Test(expected = HandshakeFailedException.class)
     public void putNoHandhake()throws Exception{
-
         byte[] nonce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(sc.getServerNonce()+1).array(), clientKey);
-        byte[] username = Cryptography.hash(USERNAME.getBytes());
-        byte[] domain = Cryptography.hash(DOMAIN.getBytes());
+        byte[] domainUsernameHash = Cryptography.hash((DOMAIN+USERNAME).getBytes());
         byte[] password = Cryptography.asymmetricCipher(PASSWORD_TO_STORE.getBytes(), clientCert.getPublicKey());
 
-        byte[] userdata = new byte[domain.length+username.length+password.length];
-        System.arraycopy(domain, 0, userdata, 0, domain.length);
-        System.arraycopy(username, 0, userdata, domain.length, username.length);
-        System.arraycopy(password, 0, userdata, domain.length+username.length, password.length);
+        byte[] userdata = new byte[domainUsernameHash.length+password.length];
+        System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
+        System.arraycopy(password, 0, userdata, domainUsernameHash.length, password.length);
 
         byte[] signature = Cryptography.sign(userdata, clientKey);
 
-        sc.put(nonce,domain,username,password,clientCert, signature);
+
+        sc.put(nonce,domainUsernameHash,password,clientCert, signature);
     }
 
     @org.junit.Test(expected = HandshakeFailedException.class)
     public void getNoHandhake()throws Exception{
         int nonce = sc.getServerNonce()+1;
-        byte[] username = Cryptography.hash(USERNAME.getBytes());
-        byte[] domain = Cryptography.hash(DOMAIN.getBytes());
+        byte[] domainUsernameHash = Cryptography.hash((DOMAIN+USERNAME).getBytes());
 
         byte[] nonceBytes = ByteBuffer.allocate(NONCE_SIZE).putInt(nonce).array();
 
-        byte[] userdata = new byte[domain.length+username.length+NONCE_SIZE];
-        System.arraycopy(domain, 0, userdata, 0, domain.length);
-        System.arraycopy(username, 0, userdata, domain.length, username.length);
-        System.arraycopy(nonceBytes, 0, userdata, domain.length+username.length, NONCE_SIZE);
+        byte[] userdata = new byte[domainUsernameHash.length+NONCE_SIZE];
+        System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
+        System.arraycopy(nonceBytes, 0, userdata, domainUsernameHash.length, NONCE_SIZE);
 
         byte[] signature = Cryptography.sign(userdata, clientKey);
 
-        sc.get(nonce, clientCert, domain, username, signature);
+
+        PasswordResponse pw = sc.get(nonce, clientCert, domainUsernameHash, signature);
     }
 
     @org.junit.Test(expected = AuthenticationFailureException.class)
     public void putBadNonce()throws Exception{
         byte[] nonce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(sc.getServerNonce()+2).array(), clientKey);
-        byte[] username = Cryptography.hash(USERNAME.getBytes());
-        byte[] domain = Cryptography.hash(DOMAIN.getBytes());
+        byte[] domainUsernameHash = Cryptography.hash((DOMAIN+USERNAME).getBytes());
         byte[] password = Cryptography.asymmetricCipher(PASSWORD_TO_STORE.getBytes(), clientCert.getPublicKey());
 
-        byte[] userdata = new byte[domain.length+username.length+password.length];
-        System.arraycopy(domain, 0, userdata, 0, domain.length);
-        System.arraycopy(username, 0, userdata, domain.length, username.length);
-        System.arraycopy(password, 0, userdata, domain.length+username.length, password.length);
+        byte[] userdata = new byte[domainUsernameHash.length+password.length];
+        System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
+        System.arraycopy(password, 0, userdata, domainUsernameHash.length, password.length);
 
         byte[] signature = Cryptography.sign(userdata, clientKey);
 
@@ -263,22 +246,20 @@ public class ClientAppTest {
         int decipheredResponse = ByteBuffer.wrap(Cryptography.asymmetricDecipher(response, serverCert.getPublicKey())).getInt();
         assertEquals(myNounce+1, decipheredResponse);
 
-        sc.put(nonce,domain,username,password,clientCert, signature);
+        sc.put(nonce,domainUsernameHash,password,clientCert, signature);
 
     }
 
     @org.junit.Test(expected = AuthenticationFailureException.class)
     public void getBadNonce()throws Exception{
-        byte[] username = Cryptography.hash(USERNAME.getBytes());
-        byte[] domain = Cryptography.hash(DOMAIN.getBytes());
+        byte[] domainUsernameHash = Cryptography.hash((DOMAIN+USERNAME).getBytes());
 
         int nonce = sc.getServerNonce()+2;
         byte[] nonceBytes = ByteBuffer.allocate(NONCE_SIZE).putInt(nonce).array();
 
-        byte[] userdata = new byte[domain.length+username.length+NONCE_SIZE];
-        System.arraycopy(domain, 0, userdata, 0, domain.length);
-        System.arraycopy(username, 0, userdata, domain.length, username.length);
-        System.arraycopy(nonceBytes, 0, userdata, domain.length+username.length, NONCE_SIZE);
+        byte[] userdata = new byte[domainUsernameHash.length+NONCE_SIZE];
+        System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
+        System.arraycopy(nonceBytes, 0, userdata, domainUsernameHash.length, NONCE_SIZE);
 
         byte[] signature = Cryptography.sign(userdata, clientKey);
 
@@ -289,21 +270,19 @@ public class ClientAppTest {
         int decipheredResponse = ByteBuffer.wrap(Cryptography.asymmetricDecipher(response, serverCert.getPublicKey())).getInt();
         assertEquals(myNounce+1, decipheredResponse);
 
-        sc.get(nonce, clientCert, domain, username, signature);
+        sc.get(nonce, clientCert, domainUsernameHash, signature);
 
     }
 
     @org.junit.Test(expected = AuthenticationFailureException.class)
     public void putBadNonceCipher()throws Exception{
         byte[] nonce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(sc.getServerNonce()+1).array(), clientKey);
-        byte[] username = Cryptography.hash(USERNAME.getBytes());
-        byte[] domain = Cryptography.hash(DOMAIN.getBytes());
+        byte[] domainUsernameHash = Cryptography.hash((DOMAIN+USERNAME).getBytes());
         byte[] password = Cryptography.asymmetricCipher(PASSWORD_TO_STORE.getBytes(), clientCert.getPublicKey());
 
-        byte[] userdata = new byte[domain.length+username.length+password.length];
-        System.arraycopy(domain, 0, userdata, 0, domain.length);
-        System.arraycopy(username, 0, userdata, domain.length, username.length);
-        System.arraycopy(password, 0, userdata, domain.length+username.length, password.length);
+        byte[] userdata = new byte[domainUsernameHash.length+password.length];
+        System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
+        System.arraycopy(password, 0, userdata, domainUsernameHash.length, password.length);
 
         byte[] signature = Cryptography.sign(userdata, clientKey);
 
@@ -315,20 +294,18 @@ public class ClientAppTest {
         assertEquals(myNounce+1, decipheredResponse);
 
         nonce[0] = flipBits(nonce[0]);
-        sc.put(nonce,domain,username,password,clientCert, signature);
+        sc.put(nonce,domainUsernameHash,password,clientCert, signature);
 
     }
     @org.junit.Test(expected = AuthenticationFailureException.class)
     public void putTamperedMessageUsername()throws Exception{
         byte[] nonce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(sc.getServerNonce()+1).array(), clientKey);
-        byte[] username = Cryptography.hash(USERNAME.getBytes());
-        byte[] domain = Cryptography.hash(DOMAIN.getBytes());
+        byte[] domainUsernameHash = Cryptography.hash((DOMAIN+USERNAME).getBytes());
         byte[] password = Cryptography.asymmetricCipher(PASSWORD_TO_STORE.getBytes(), clientCert.getPublicKey());
 
-        byte[] userdata = new byte[domain.length+username.length+password.length];
-        System.arraycopy(domain, 0, userdata, 0, domain.length);
-        System.arraycopy(username, 0, userdata, domain.length, username.length);
-        System.arraycopy(password, 0, userdata, domain.length+username.length, password.length);
+        byte[] userdata = new byte[domainUsernameHash.length+password.length];
+        System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
+        System.arraycopy(password, 0, userdata, domainUsernameHash.length, password.length);
 
         byte[] signature = Cryptography.sign(userdata, clientKey);
 
@@ -339,52 +316,19 @@ public class ClientAppTest {
         int decipheredResponse = ByteBuffer.wrap(Cryptography.asymmetricDecipher(response, serverCert.getPublicKey())).getInt();
         assertEquals(myNounce+1, decipheredResponse);
 
-
-        username[username.length-username.length/2] = flipBits(username[username.length-username.length/2]);
-
-        sc.put(nonce,domain,username,password,clientCert, signature);
-
-    }
-
-    @org.junit.Test(expected = AuthenticationFailureException.class)
-    public void putTamperedMessageDomain()throws Exception{
-        byte[] nonce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(sc.getServerNonce()+1).array(), clientKey);
-        byte[] username = Cryptography.hash(USERNAME.getBytes());
-        byte[] domain = Cryptography.hash(DOMAIN.getBytes());
-        byte[] password = Cryptography.asymmetricCipher(PASSWORD_TO_STORE.getBytes(), clientCert.getPublicKey());
-
-        byte[] userdata = new byte[domain.length+username.length+password.length];
-        System.arraycopy(domain, 0, userdata, 0, domain.length);
-        System.arraycopy(username, 0, userdata, domain.length, username.length);
-        System.arraycopy(password, 0, userdata, domain.length+username.length, password.length);
-
-        byte[] signature = Cryptography.sign(userdata, clientKey);
-
-
-        int myNounce = new SecureRandom().nextInt();
-        byte[] response = sc.handshake(myNounce);
-
-        int decipheredResponse = ByteBuffer.wrap(Cryptography.asymmetricDecipher(response, serverCert.getPublicKey())).getInt();
-        assertEquals(myNounce+1, decipheredResponse);
-
-
-        domain[domain.length-domain.length/2] = flipBits(domain[domain.length-domain.length/2]);
-
-        sc.put(nonce,domain,username,password,clientCert, signature);
-
+        domainUsernameHash[domainUsernameHash.length-domainUsernameHash.length/2] = flipBits(domainUsernameHash[domainUsernameHash.length-domainUsernameHash.length/2]);
+        sc.put(nonce,domainUsernameHash,password,clientCert, signature);
     }
 
     @org.junit.Test(expected = AuthenticationFailureException.class)
     public void putTamperedMessagePassword()throws Exception{
         byte[] nonce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(sc.getServerNonce()+1).array(), clientKey);
-        byte[] username = Cryptography.hash(USERNAME.getBytes());
-        byte[] domain = Cryptography.hash(DOMAIN.getBytes());
+        byte[] domainUsernameHash = Cryptography.hash((DOMAIN+USERNAME).getBytes());
         byte[] password = Cryptography.asymmetricCipher(PASSWORD_TO_STORE.getBytes(), clientCert.getPublicKey());
 
-        byte[] userdata = new byte[domain.length+username.length+password.length];
-        System.arraycopy(domain, 0, userdata, 0, domain.length);
-        System.arraycopy(username, 0, userdata, domain.length, username.length);
-        System.arraycopy(password, 0, userdata, domain.length+username.length, password.length);
+        byte[] userdata = new byte[domainUsernameHash.length+password.length];
+        System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
+        System.arraycopy(password, 0, userdata, domainUsernameHash.length, password.length);
 
         byte[] signature = Cryptography.sign(userdata, clientKey);
 
@@ -395,24 +339,19 @@ public class ClientAppTest {
         int decipheredResponse = ByteBuffer.wrap(Cryptography.asymmetricDecipher(response, serverCert.getPublicKey())).getInt();
         assertEquals(myNounce+1, decipheredResponse);
 
-
         password[password.length-password.length/2] = flipBits(password[password.length-password.length/2]);
-
-        sc.put(nonce,domain,username,password,clientCert, signature);
-
+        sc.put(nonce,domainUsernameHash,password,clientCert, signature);
     }
 
     @org.junit.Test(expected = AuthenticationFailureException.class)
     public void putTamperedMessageSignature()throws Exception{
         byte[] nonce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(sc.getServerNonce()+1).array(), clientKey);
-        byte[] username = Cryptography.hash(USERNAME.getBytes());
-        byte[] domain = Cryptography.hash(DOMAIN.getBytes());
+        byte[] domainUsernameHash = Cryptography.hash((DOMAIN+USERNAME).getBytes());
         byte[] password = Cryptography.asymmetricCipher(PASSWORD_TO_STORE.getBytes(), clientCert.getPublicKey());
 
-        byte[] userdata = new byte[domain.length+username.length+password.length];
-        System.arraycopy(domain, 0, userdata, 0, domain.length);
-        System.arraycopy(username, 0, userdata, domain.length, username.length);
-        System.arraycopy(password, 0, userdata, domain.length+username.length, password.length);
+        byte[] userdata = new byte[domainUsernameHash.length+password.length];
+        System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
+        System.arraycopy(password, 0, userdata, domainUsernameHash.length, password.length);
 
         byte[] signature = Cryptography.sign(userdata, clientKey);
 
@@ -424,51 +363,20 @@ public class ClientAppTest {
         assertEquals(myNounce+1, decipheredResponse);
 
         signature[signature.length-signature.length/2] = flipBits(signature[signature.length-signature.length/2]);
-
-        sc.put(nonce,domain,username,password,clientCert, signature);
-
+        sc.put(nonce,domainUsernameHash,password,clientCert, signature);
     }
 
-    @org.junit.Test(expected = AuthenticationFailureException.class)
-    public void getTamperedMessageDomain()throws Exception{
-        int nonce = sc.getServerNonce()+1;
-        byte[] username = Cryptography.hash(USERNAME.getBytes());
-        byte[] domain = Cryptography.hash(DOMAIN.getBytes());
-
-        byte[] nonceBytes = ByteBuffer.allocate(NONCE_SIZE).putInt(nonce).array();
-
-        byte[] userdata = new byte[domain.length+username.length+NONCE_SIZE];
-        System.arraycopy(domain, 0, userdata, 0, domain.length);
-        System.arraycopy(username, 0, userdata, domain.length, username.length);
-        System.arraycopy(nonceBytes, 0, userdata, domain.length+username.length, NONCE_SIZE);
-
-        byte[] signature = Cryptography.sign(userdata, clientKey);
-
-
-        int myNounce = new SecureRandom().nextInt();
-        byte[] response = sc.handshake(myNounce);
-
-        int decipheredResponse = ByteBuffer.wrap(Cryptography.asymmetricDecipher(response, serverCert.getPublicKey())).getInt();
-        assertEquals(myNounce+1, decipheredResponse);
-
-        domain[domain.length-domain.length/2] = flipBits(domain[domain.length-domain.length/2]);
-
-        sc.get(nonce, clientCert, domain, username, signature);
-
-    }
 
     @org.junit.Test(expected = AuthenticationFailureException.class)
     public void getTamperedMessageUsername()throws Exception{
         int nonce = sc.getServerNonce()+1;
-        byte[] username = Cryptography.hash(USERNAME.getBytes());
-        byte[] domain = Cryptography.hash(DOMAIN.getBytes());
+        byte[] domainUsernameHash = Cryptography.hash((DOMAIN+USERNAME).getBytes());
 
         byte[] nonceBytes = ByteBuffer.allocate(NONCE_SIZE).putInt(nonce).array();
 
-        byte[] userdata = new byte[domain.length+username.length+NONCE_SIZE];
-        System.arraycopy(domain, 0, userdata, 0, domain.length);
-        System.arraycopy(username, 0, userdata, domain.length, username.length);
-        System.arraycopy(nonceBytes, 0, userdata, domain.length+username.length, NONCE_SIZE);
+        byte[] userdata = new byte[domainUsernameHash.length+NONCE_SIZE];
+        System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
+        System.arraycopy(nonceBytes, 0, userdata, domainUsernameHash.length, NONCE_SIZE);
 
         byte[] signature = Cryptography.sign(userdata, clientKey);
 
@@ -479,24 +387,24 @@ public class ClientAppTest {
         int decipheredResponse = ByteBuffer.wrap(Cryptography.asymmetricDecipher(response, serverCert.getPublicKey())).getInt();
         assertEquals(myNounce+1, decipheredResponse);
 
-        username[username.length-username.length/2] = flipBits(username[username.length-username.length/2]);
+        domainUsernameHash[domainUsernameHash.length-domainUsernameHash.length/2] = flipBits(domainUsernameHash[domainUsernameHash.length-domainUsernameHash.length/2]);
 
-        sc.get(nonce, clientCert, domain, username, signature);
+        PasswordResponse pw = sc.get(nonce, clientCert, domainUsernameHash, signature);
+
+
 
     }
 
     @org.junit.Test(expected = AuthenticationFailureException.class)
     public void getTamperedMessageSignature()throws Exception{
         int nonce = sc.getServerNonce()+1;
-        byte[] username = Cryptography.hash(USERNAME.getBytes());
-        byte[] domain = Cryptography.hash(DOMAIN.getBytes());
+        byte[] domainUsernameHash = Cryptography.hash((DOMAIN+USERNAME).getBytes());
 
         byte[] nonceBytes = ByteBuffer.allocate(NONCE_SIZE).putInt(nonce).array();
 
-        byte[] userdata = new byte[domain.length+username.length+NONCE_SIZE];
-        System.arraycopy(domain, 0, userdata, 0, domain.length);
-        System.arraycopy(username, 0, userdata, domain.length, username.length);
-        System.arraycopy(nonceBytes, 0, userdata, domain.length+username.length, NONCE_SIZE);
+        byte[] userdata = new byte[domainUsernameHash.length+NONCE_SIZE];
+        System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
+        System.arraycopy(nonceBytes, 0, userdata, domainUsernameHash.length, NONCE_SIZE);
 
         byte[] signature = Cryptography.sign(userdata, clientKey);
 
@@ -508,9 +416,7 @@ public class ClientAppTest {
         assertEquals(myNounce+1, decipheredResponse);
 
         signature[signature.length-signature.length/2] = flipBits(signature[signature.length-signature.length/2]);
-
-        sc.get(nonce, clientCert, domain, username, signature);
-
+        PasswordResponse pw = sc.get(nonce, clientCert, domainUsernameHash, signature);
     }
 
 }
