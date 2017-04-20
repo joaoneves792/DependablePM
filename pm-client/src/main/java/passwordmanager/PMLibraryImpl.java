@@ -109,20 +109,22 @@ public class PMLibraryImpl implements  PMLibrary{
 
             passwordResponse = pm.get(hashedDomainUsername);
 
+            byte[] data = new byte[passwordResponse.domainUsernameHash.length + passwordResponse.password.length];
+            System.arraycopy(passwordResponse.domainUsernameHash, 0, data, 0, passwordResponse.domainUsernameHash.length);
+            System.arraycopy(passwordResponse.password, 0, data, passwordResponse.domainUsernameHash.length, passwordResponse.password.length);
+            Cryptography.verifySignature(data, passwordResponse.signature, KeyManager.getInstance().getMyCertificate().getPublicKey());
+
             PrivateKey clientKey = KeyManager.getInstance().getMyPrivateKey();
-
-            //TODO VERIFY OUR SIGNATURE!!
-
             return Cryptography.asymmetricDecipher(passwordResponse.password, clientKey);
 
         }catch(HandshakeFailedException e){
             throw new LibraryOperationException("Failure in server handshaking", e);
         }catch(UnrecoverableEntryException e){
             throw new LibraryOperationException("Failure retrieving private key", e);
-        }catch(NoSuchAlgorithmException e){
-            throw new LibraryOperationException("Failure retrieving private key", e);
-        }catch(KeyStoreException e){
-            throw new LibraryOperationException("Failure retrieving private key", e);
+        }catch(SignatureException | FailedToVerifySignatureException | InvalidSignatureException e){
+            throw new LibraryOperationException("Failure to validate the responses signature", e);
+        }catch(FailedToRetrieveKeyException | NoSuchAlgorithmException | KeyStoreException e){
+            throw new LibraryOperationException("Failure retrieving cryptographic material", e);
         }catch(AuthenticationFailureException e){
             throw new LibraryOperationException("Message invalid for server", e);
         }catch(FailedToHashException e){
@@ -136,6 +138,8 @@ public class PMLibraryImpl implements  PMLibrary{
         }catch(FailedToDecryptException e){
             System.out.println(e.toString());
             throw new LibraryOperationException(e.toString(), e);
+        }catch (CertificateException e){
+            throw new LibraryOperationException("Failed to retrieve cryptographic material from the keystore");
         }
     }
 
