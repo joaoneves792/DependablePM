@@ -42,7 +42,7 @@ public class ClientAppTest {
 
     @org.junit.Before
     public void setUp() throws Exception {
-        PMService pm = (PMService) Naming.lookup("rmi://" + "localhost" +":"+2020+"/PMService");
+        PMService pm = (PMService) Naming.lookup("rmi://" + "localhost" +":"+2021+"/PMService");
 
         KeyStore ks = loadKeystore(CLIENT_KEYSTORE, PASSWORD);
         KeyStore.ProtectionParameter protParam = new KeyStore.PasswordProtection(PASSWORD);

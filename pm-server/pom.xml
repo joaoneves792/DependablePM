@@ -14,6 +14,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <mainclass>passwordmanager.ServerApp</mainclass>
+    <processLauncher>launcher.ProcessLauncher</processLauncher>
     <maven.compiler.source>1.7</maven.compiler.source>
     <maven.compiler.target>1.7</maven.compiler.target>
   </properties>
@@ -33,9 +34,13 @@
         </executions>
         <configuration>
           <killAfter>-1</killAfter><!-- to prevent deprecated warning -->
-          <mainClass>${mainclass}</mainClass>
+          <mainClass>${processLauncher}</mainClass>
           <systemProperties>
-          </systemProperties>
+	  </systemProperties>
+	  <arguments>
+		  <argument>1</argument>
+		  <argument>123456</argument>
+	  </arguments>
         </configuration>
       </plugin>
       <plugin>
@@ -72,16 +77,11 @@
     <version>1.0-SNAPSHOT</version>
     <scope>compile</scope>
    </dependency>
-  <dependency>
-    <groupId>junit</groupId>
-    <artifactId>junit</artifactId>
-    <version>4.11</version>
-    <scope>test</scope>
-   </dependency>
-      <dependency>
+   <dependency>
           <groupId>junit</groupId>
           <artifactId>junit</artifactId>
-          <version>4.12</version>
-      </dependency>
+	  <version>4.12</version>
+	  <scope>test</scope>
+   </dependency>
   </dependencies>
 </project>

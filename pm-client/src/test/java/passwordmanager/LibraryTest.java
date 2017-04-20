@@ -51,7 +51,7 @@ public class LibraryTest {
     @org.junit.Before
     public void setUp() throws Exception {
         // Initialize Server
-        PMService pm = (PMService) Naming.lookup("rmi://" + "localhost" +":"+2020+"/PMService");
+        PMService pm = (PMService) Naming.lookup("rmi://" + "localhost" +":"+2021+"/PMService");
 
         // Initialize Library
         lib = new PMLibraryImpl(pm);
