@@ -50,11 +50,8 @@ public class LibraryTest {
 
     @org.junit.Before
     public void setUp() throws Exception {
-        // Initialize Server
-        PMService pm = (PMService) Naming.lookup("rmi://" + "localhost" +":"+2021+"/PMService");
-
         // Initialize Library
-        lib = new PMLibraryImpl(pm);
+        lib = new PMLibraryImpl();
 
         // Register user
         try{
@@ -182,33 +179,20 @@ public class LibraryTest {
 
     }
 
-    @org.junit.Test(expected = LibraryOperationException.class)
-    public void failSaveWrongPrivKeyAlias() throws RemoteException, LibraryOperationException{
+    @org.junit.Test(expected = LibraryInitializationException.class)
+    public void failWrongPrivKeyAlias() throws RemoteException, LibraryInitializationException{
         // Initialize library
         lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, WRONG_PRIVATEKEY_ALIAS);
-
-        // Save a password
-        byte[] domain = RIGHT_DOMAIN.getBytes();
-        byte[] password = RIGHT_PASSWORD.getBytes();
-        byte[] username = RIGHT_USERNAME.getBytes();
-        lib.save_password(domain, username, password);
     }
 
-    @org.junit.Test(expected = LibraryOperationException.class)
-    public void failSaveWrongPassword() throws RemoteException, LibraryOperationException{
+    @org.junit.Test(expected = LibraryInitializationException.class)
+    public void failWrongPassword() throws RemoteException, LibraryInitializationException{
         // Initialize library
-        lib.init(CLIENT_RIGHT_KEYSTORE, WRONG_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, WRONG_PRIVATEKEY_ALIAS);
-
-        // Save a password
-        // If password provided for the certificate is wrong
-        byte[] domain = RIGHT_DOMAIN.getBytes();
-        byte[] password = RIGHT_PASSWORD.getBytes();
-        byte[] username = RIGHT_USERNAME.getBytes();
-        lib.save_password(domain, username, password);
+        lib.init(CLIENT_RIGHT_KEYSTORE, WRONG_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
     }
 
-    @org.junit.Test(expected = LibraryOperationException.class)
-    public void failSaveWrongPrivKeyPassword() throws RemoteException, LibraryOperationException{
+    @org.junit.Test(expected = LibraryInitializationException.class)
+    public void failSaveWrongPrivKeyPassword() throws RemoteException, LibraryOperationException, LibraryInitializationException{
         // Initialize library
         lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
 
@@ -244,7 +228,7 @@ public class LibraryTest {
         lib.register_user();
     }
 
-    @org.junit.Test(expected = LibraryOperationException.class)
+    @org.junit.Test(expected = LibraryInitializationException.class)
     public void failRetrievePasswordWrongPassword() throws RemoteException, LibraryOperationException{
         // Initialize library
         lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
@@ -288,7 +272,7 @@ public class LibraryTest {
         assertEquals(passwordSent, passwordReceived);
     }
 
-    @org.junit.Test(expected = LibraryOperationException.class)
+    @org.junit.Test(expected = LibraryInitializationException.class)
     public void failRetrievePasswordWrongPrivKeyAlias() throws RemoteException, LibraryOperationException{
         // Initialize library
         lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);

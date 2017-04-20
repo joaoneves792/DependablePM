@@ -1,6 +1,7 @@
 package passwordmanager;
 
 import Crypto.Cryptography;
+import Crypto.KeyManager;
 import Crypto.exceptions.*;
 import passwordmanager.exception.LibraryInitializationException;
 import passwordmanager.exception.LibraryOperationException;
@@ -9,32 +10,47 @@ import passwordmanager.exception.SessionNotInitializedException;
 import passwordmanager.exceptions.*;
 
 
+import java.net.MalformedURLException;
 import java.nio.ByteBuffer;
+import java.rmi.Naming;
+import java.rmi.NotBoundException;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.util.Scanner;
 import java.rmi.RemoteException;
 
 public class PMLibraryImpl implements  PMLibrary{
-    private static final int NONCE_SIZE = 4;
 
-    private ServerConnectionInterface pm;
-    private Scanner keyboardSc;
-    private ConnectionState state = null;
+    private static final int faults = 1;
+
+    private ServerConnectionStub pm = null;
+
+    private String privateKeyAlias;
 
 
-    public PMLibraryImpl(PMService pmService) throws RemoteException {
-        pm = pmService.connect();
+    public PMLibraryImpl() throws RemoteException {
     }
 
     @Override
     public void init(String keystoreName, String password, String certAlias, String serverAlias, String privKeyAlias) throws RemoteException {
+        privateKeyAlias = privKeyAlias;
+        KeyManager km = KeyManager.getInstance(keystoreName, password);//Make sure the keystore has been initialized
+        km.setAliases(certAlias, serverAlias, privKeyAlias); //Make sure we are using the correct aliases
         try{
+            km.getServerCertificate();
+            km.getMyCertificate();
+            km.getMyPrivateKey();
+        }catch (CertificateException |
+                FailedToRetrieveKeyException |
+                NoSuchAlgorithmException |
+                UnrecoverableEntryException |
+                KeyStoreException |
+                SignatureException e){
+            throw new LibraryInitializationException();
+        }
 
-            state = new ConnectionState(keystoreName, password);
-            state.initializeCertificates(certAlias, serverAlias);
-            state.setPrivKeyAlias(privKeyAlias);
-            state.setPassword(password);
+        try{
+            pm = new ServerConnectionStub(faults, keystoreName, password, certAlias, serverAlias, privKeyAlias);
         }catch(FailedToRetrieveKeyException e){
             throw new LibraryInitializationException();
         }
@@ -48,9 +64,11 @@ public class PMLibraryImpl implements  PMLibrary{
 
         // Register user at server using given certificate
         try{
-            pm.register(state.getClientCertificate());
+            pm.register(KeyManager.getInstance().getMyCertificate());
         }catch(UserAlreadyRegisteredException e){
             throw new LibraryOperationException("User already registered...");
+        }catch (SignatureException | FailedToRetrieveKeyException | CertificateException e){
+            throw new LibraryOperationException("Failed to use the local keystore...");
         }
     }
 
@@ -61,43 +79,21 @@ public class PMLibraryImpl implements  PMLibrary{
 
         // Saves given password at server
         try{
-            // First authenticate the server
-            authenticateServer();
-
             // Prepare arguments
-            KeyStore.ProtectionParameter protParam = new KeyStore.PasswordProtection(state.getPassword().toCharArray());
-            PrivateKey clientKey = state.getKeyManager().getPrivateKey(state.getPrivKeyAlias());
-            byte[] nounce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(pm.getServerNonce()+1).array(), clientKey);
-
             byte[] domainUsername = new byte[domain.length+username.length];
             System.arraycopy(domain, 0, domainUsername,0, domain.length);
             System.arraycopy(username, 0, domainUsername, domain.length, username.length);
 
             byte[] hashedDomainUsername = Cryptography.hash(domainUsername);
-            byte[] cipheredPassword = Cryptography.asymmetricCipher(password, state.getClientCertificate().getPublicKey());
-
-            // Prepare signature of arguments
-            byte[] userdata = new byte[hashedDomainUsername.length+cipheredPassword.length];
-            System.arraycopy(hashedDomainUsername, 0, userdata, 0, hashedDomainUsername.length);
-            System.arraycopy(cipheredPassword, 0, userdata, hashedDomainUsername.length, cipheredPassword.length);
-            byte[] signature = Cryptography.sign(userdata, clientKey);
+            byte[] cipheredPassword = Cryptography.asymmetricCipher(password, KeyManager.getInstance().getMyCertificate().getPublicKey());
 
             // Send request to server
-            pm.put(nounce, hashedDomainUsername, cipheredPassword, state.getClientCertificate(), signature);
+            pm.put(hashedDomainUsername, cipheredPassword, KeyManager.getInstance().getMyCertificate());
 
-
-        }catch(NoSuchAlgorithmException e){
-            throw new LibraryOperationException("Failure retrieving private key", e);
-        }catch(UnrecoverableEntryException e){
-            throw new LibraryOperationException("Failure retrieving private key", e);
-        }catch(KeyStoreException e){
-            throw new LibraryOperationException("Failure retrieving private key", e);
         }catch(FailedToEncryptException e){
             throw new LibraryOperationException("Failure to encrypt data to sent to server", e);
         }catch(HandshakeFailedException e){
             throw new LibraryOperationException("Failure in server handshaking", e);
-        }catch(FailedToSignException e){
-            throw new LibraryOperationException("Failure signing data", e);
         }catch(AuthenticationFailureException e){
             throw new LibraryOperationException("Message invalid for server", e);
         }catch(ServerAuthenticationException e){
@@ -106,6 +102,8 @@ public class PMLibraryImpl implements  PMLibrary{
             throw new LibraryOperationException("Failure hashing data...", e);
         }catch(UserNotRegisteredException e){
             throw new LibraryOperationException("User is not registered ...", e);
+        }catch (SignatureException | FailedToRetrieveKeyException | CertificateException e){
+            throw new LibraryOperationException("Failed to use the local keystore...");
         }
     }
 
@@ -114,40 +112,21 @@ public class PMLibraryImpl implements  PMLibrary{
         try{
             checkSession();
             
-            // First authenticate server
-            int inicialNounce = authenticateServer();
-
-            // Prepare arguments
-            int nounce = pm.getServerNonce()+1; // Why not to cipher the nounce like we do in put?
-            byte[] nounceBytes = ByteBuffer.allocate(NONCE_SIZE).putInt(nounce).array();
-
             byte[] domainUsername = new byte[domain.length+username.length];
             System.arraycopy(domain, 0, domainUsername,0, domain.length);
             System.arraycopy(username, 0, domainUsername, domain.length, username.length);
             byte[] hashedDomainUsername = Cryptography.hash(domainUsername);
 
-            byte[] userdata = new byte[hashedDomainUsername.length+NONCE_SIZE];
-            System.arraycopy(hashedDomainUsername, 0, userdata, 0, hashedDomainUsername.length);
-            System.arraycopy(nounceBytes, 0, userdata, hashedDomainUsername.length, NONCE_SIZE);
-
-            PrivateKey clientKey = state.getKeyManager().getPrivateKey(state.getPrivKeyAlias());
-            byte[] signature = Cryptography.sign(userdata, clientKey);
-
             // Make get request
             PasswordResponse passwordResponse;
 
-            passwordResponse = pm.get(nounce, state.getClientCertificate(), hashedDomainUsername, signature);
+            passwordResponse = pm.get(hashedDomainUsername);
 
-            byte[] decipheredNounceByte = Cryptography.asymmetricDecipher(passwordResponse.nonce, state.getServerCertificate().getPublicKey());
-            int passwordResponseNounce = ByteBuffer.wrap(decipheredNounceByte).getInt();
-            if(passwordResponseNounce != inicialNounce + 2)
-                throw new LibraryOperationException("Server authentication issue...");
-
+            PrivateKey clientKey = KeyManager.getInstance().getPrivateKey(privateKeyAlias);
             return Cryptography.asymmetricDecipher(passwordResponse.password, clientKey);
+
         }catch(HandshakeFailedException e){
             throw new LibraryOperationException("Failure in server handshaking", e);
-        }catch(ServerAuthenticationException e){
-            throw new LibraryOperationException("Failure authenticating server", e);
         }catch(UnrecoverableEntryException e){
             throw new LibraryOperationException("Failure retrieving private key", e);
         }catch(NoSuchAlgorithmException e){
@@ -156,8 +135,6 @@ public class PMLibraryImpl implements  PMLibrary{
             throw new LibraryOperationException("Failure retrieving private key", e);
         }catch(AuthenticationFailureException e){
             throw new LibraryOperationException("Message invalid for server", e);
-        }catch(FailedToSignException e){
-            throw new LibraryOperationException("Failure signing data", e);
         }catch(FailedToHashException e){
             throw new LibraryOperationException("Failure hashing data...", e);
         }catch(StorageFailureException e){
@@ -172,33 +149,16 @@ public class PMLibraryImpl implements  PMLibrary{
         }
     }
 
-    @Override
-    public void close() throws RemoteException {
-        state = null;
-    }
-
-    public int authenticateServer() throws ServerAuthenticationException, RemoteException, LibraryOperationException{
-        try{
-            int myNounce = new SecureRandom().nextInt();
-            byte[] response = pm.handshake(myNounce);
-            int decipheredResponse = ByteBuffer.wrap(Cryptography.asymmetricDecipher(response, state.getServerCertificate().getPublicKey())).getInt();
-            if(myNounce+1 != decipheredResponse){
-                throw new ServerAuthenticationException("Server challenge not surpassed");
-            }
-            return myNounce;
-        }catch(HandshakeFailedException e){
-            throw new LibraryOperationException("Failure authenticating server", e);
-        }catch(FailedToDecryptException e){
-            throw new LibraryOperationException("Failure decrypting server response", e);
+    private void checkSession(){
+        if(null == pm){
+            throw new SessionNotInitializedException("Session has not been initialized yet");
         }
     }
 
-    public void checkSession() throws SessionNotInitializedException{
-        if(state == null)
-            throw new SessionNotInitializedException("Session not yet initialized");
+    @Override
+    public void close() throws RemoteException {
+        pm = null;
     }
 
-    public ConnectionState getState() {
-        return state;
-    }
 }
+

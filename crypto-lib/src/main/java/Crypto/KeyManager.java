@@ -17,10 +17,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * Created by joao on 5/4/16.
  */
 public class KeyManager {
-    private static final String CACERT = "cacert";
-    private static final String MYKEY = "mykey";
-    private static final String MYCERT = "mycert";
-    private static final String SERVERCERT = "dependablepmserver";
+    private static String CACERT = "cacert";
+    private static String MYKEY = "mykey";
+    private static String MYCERT = "mycert";
+    private static String SERVERCERT = "dependablepmserver";
 
     private static KeyStore _ks;
 
@@ -68,6 +68,11 @@ public class KeyManager {
         return instance;
     }
 
+    //This may be null!! it should only be used after the full getInstance has been called once!
+    public static KeyManager getInstance(){
+        return instance;
+    }
+
     public static synchronized void close(){
         for(int i=0; i<_password.length; i++){
             _password[i] = '0';
@@ -94,6 +99,12 @@ public class KeyManager {
         return null;
     }
 
+    public synchronized void setAliases(String mycert, String servercert, String privatekey){
+        SERVERCERT = servercert;
+        MYCERT = mycert;
+        MYKEY = privatekey;
+    }
+
     public synchronized PrivateKey getPrivateKey(String alias) throws NoSuchAlgorithmException, UnrecoverableEntryException, KeyStoreException{
         KeyStore.ProtectionParameter protParam = new KeyStore.PasswordProtection(_password);
         if((KeyStore.PrivateKeyEntry) _ks.getEntry(alias, protParam) == null){
@@ -104,6 +115,9 @@ public class KeyManager {
 
     public synchronized PrivateKey getMyPrivateKey() throws NoSuchAlgorithmException, UnrecoverableEntryException, KeyStoreException{
         KeyStore.ProtectionParameter protParam = new KeyStore.PasswordProtection(_password);
+        if(_ks.getEntry(MYKEY, protParam) == null){
+            throw new KeyStoreException("No such key for provided alias!");
+        }
         return ((KeyStore.PrivateKeyEntry)(_ks.getEntry(MYKEY, protParam))).getPrivateKey();
     }
 
