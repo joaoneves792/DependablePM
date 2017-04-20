@@ -110,6 +110,9 @@ public class PMLibraryImpl implements  PMLibrary{
             passwordResponse = pm.get(hashedDomainUsername);
 
             PrivateKey clientKey = KeyManager.getInstance().getMyPrivateKey();
+
+            //TODO VERIFY OUR SIGNATURE!!
+
             return Cryptography.asymmetricDecipher(passwordResponse.password, clientKey);
 
         }catch(HandshakeFailedException e){

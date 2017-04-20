@@ -3,15 +3,11 @@ package passwordmanager;
 import Crypto.Cryptography;
 import Crypto.KeyManager;
 import Crypto.exceptions.FailedToDecryptException;
-import Crypto.exceptions.FailedToEncryptException;
 import Crypto.exceptions.FailedToRetrieveKeyException;
-import Crypto.exceptions.FailedToSignException;
 import passwordmanager.exception.LibraryOperationException;
 import passwordmanager.exception.ServerAuthenticationException;
-import passwordmanager.exception.SessionNotInitializedException;
 import passwordmanager.exceptions.*;
 
-import javax.naming.AuthenticationException;
 import java.net.MalformedURLException;
 import java.nio.ByteBuffer;
 import java.rmi.Naming;
@@ -20,10 +16,8 @@ import java.rmi.RemoteException;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.*;
 
 /**
@@ -73,7 +67,7 @@ public class ServerConnectionStub{
 
     public void put(byte[] domainUsernameHash, byte[] password, X509Certificate clientCert)throws LibraryOperationException{
 
-        class PutTask implements Callable<Exception>{
+        class PutTask implements Callable<Void>{
             private byte[] _domainUsernameHash;
             private byte[] _password;
             private X509Certificate _clientCert;
@@ -85,39 +79,22 @@ public class ServerConnectionStub{
                 _server = s;
             }
 
-            public Exception call(){
-                try {
-                    authenticateServer(_server);
-                    PrivateKey clientKey = KeyManager.getInstance().getMyPrivateKey();
-                    byte[] nounce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(getServerNonce(_server) + 1).array(), clientKey);
+            public Void call() throws Exception{
+                authenticateServer(_server);
+                PrivateKey clientKey = KeyManager.getInstance().getMyPrivateKey();
+                byte[] nonce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(getServerNonce(_server) + 1).array(), clientKey);
 
-                    byte[] userdata = new byte[_domainUsernameHash.length + _password.length];
-                    System.arraycopy(_domainUsernameHash, 0, userdata, 0, _domainUsernameHash.length);
-                    System.arraycopy(_password, 0, userdata, _domainUsernameHash.length, _password.length);
-                    byte[] signature = Cryptography.sign(userdata, clientKey);
+                byte[] userdata = new byte[_domainUsernameHash.length + _password.length];
+                System.arraycopy(_domainUsernameHash, 0, userdata, 0, _domainUsernameHash.length);
+                System.arraycopy(_password, 0, userdata, _domainUsernameHash.length, _password.length);
+                byte[] signature = Cryptography.sign(userdata, clientKey);
 
-                    _server.put(nounce, _domainUsernameHash, _password, _clientCert, signature);
-                }catch (RemoteException |
-                        ServerAuthenticationException |
-                        HandshakeFailedException |
-                        FailedToDecryptException |
-                        CertificateException |
-                        SignatureException |
-                        FailedToRetrieveKeyException |
-                        NoSuchAlgorithmException |
-                        UnrecoverableEntryException |
-                        KeyStoreException |
-                        FailedToSignException |
-                        FailedToEncryptException |
-                        UserNotRegisteredException |
-                        AuthenticationFailureException e){
-                    return e;
-                }
+                _server.put(nonce, _domainUsernameHash, _password, _clientCert, signature);
                 return null;
             }
         };
 
-        CompletionService<Exception> cs = new ExecutorCompletionService<Exception>(_ex);
+        CompletionService<Void> cs = new ExecutorCompletionService<Void>(_ex);
         for (ServerConnectionInterface server : _connections) {
             cs.submit(new PutTask(domainUsernameHash, password, clientCert, server));
         }
@@ -128,14 +105,12 @@ public class ServerConnectionStub{
             if(successfull >= _quorumCount)
                 break;
             try {
-                Exception e = cs.take().get();
-                if(null == e){
-                    successfull++;
-                }
+                cs.take().get();
+                successfull++;
             }catch (InterruptedException e){
                 --i; //Try again;
             }catch (ExecutionException e){
-                //Empty on purpose
+                //Empty on purpose Ignore if this call gave an exception
             }
         }
 
@@ -146,45 +121,72 @@ public class ServerConnectionStub{
 
     public PasswordResponse get(byte[] domainUsernameHash)throws RemoteException, LibraryOperationException, HandshakeFailedException, AuthenticationFailureException, UserNotRegisteredException, PasswordNotFoundException, StorageFailureException{
         PasswordResponse finalResponse = null;
-        try {
-            for (ServerConnectionInterface server : _connections) {
-                try {
+
+        class GetTask implements Callable<PasswordResponse> {
+            private byte[] _domainUsernameHash;
+            private ServerConnectionInterface _server;
+
+            GetTask(byte[] domainUsernameHash, ServerConnectionInterface server) {
+                _domainUsernameHash = domainUsernameHash;
+                _server = server;
+            }
+
+            public PasswordResponse call()throws Exception {
                     // First authenticate server
-                    int initialNounce = authenticateServer(server);
+                    int initialNounce = authenticateServer(_server);
 
                     // Prepare arguments
-                    int nounce = getServerNonce(server) + 1;
+                    int nounce = getServerNonce(_server) + 1;
                     byte[] nounceBytes = ByteBuffer.allocate(NONCE_SIZE).putInt(nounce).array();
 
-                    byte[] userdata = new byte[domainUsernameHash.length + NONCE_SIZE];
-                    System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
-                    System.arraycopy(nounceBytes, 0, userdata, domainUsernameHash.length, NONCE_SIZE);
+                    byte[] userdata = new byte[_domainUsernameHash.length + NONCE_SIZE];
+                    System.arraycopy(_domainUsernameHash, 0, userdata, 0, _domainUsernameHash.length);
+                    System.arraycopy(nounceBytes, 0, userdata, _domainUsernameHash.length, NONCE_SIZE);
 
                     PrivateKey clientKey = KeyManager.getInstance().getMyPrivateKey();
                     byte[] signature = Cryptography.sign(userdata, clientKey);
 
                     PasswordResponse response;
-                    response = server.get(nounce, KeyManager.getInstance().getMyCertificate(), domainUsernameHash, signature);
+                    response = _server.get(nounce, KeyManager.getInstance().getMyCertificate(), _domainUsernameHash, signature);
 
                     byte[] decipheredNounceByte = Cryptography.asymmetricDecipher(response.nonce, KeyManager.getInstance().getServerCertificate().getPublicKey());
                     int passwordResponseNounce = ByteBuffer.wrap(decipheredNounceByte).getInt();
                     if (passwordResponseNounce != initialNounce + 2)
-                        throw new AuthenticationFailureException("Bad nonce");
-                    finalResponse = response;
-                } catch (ServerAuthenticationException | FailedToDecryptException e) {
-                    //TODO Logic for handling individual server failures
-                }
+                        throw new AuthenticationFailureException("Bad nonce response.");
+                    else
+                        return response;
             }
-        }catch (NoSuchAlgorithmException |
-                UnrecoverableEntryException |
-                FailedToRetrieveKeyException |
-                KeyStoreException |
-                CertificateException |
-                SignatureException |
-                FailedToSignException e){
-            throw new LibraryOperationException("Unrecoverable local failure", e);
+        };
+
+        CompletionService<PasswordResponse> cs = new ExecutorCompletionService<PasswordResponse>(_ex);
+        for (ServerConnectionInterface server : _connections) {
+            cs.submit(new GetTask(domainUsernameHash, server));
         }
-        return finalResponse;
+
+        int successfull = 0;
+        List<PasswordResponse> responses = new LinkedList<>();
+
+        for (int i=0; i<_serverCount; i++){
+            if(successfull >= _quorumCount)
+                break;
+            try {
+                PasswordResponse r = cs.take().get();
+                if(null != r){
+                    responses.add(r);
+                    successfull++;
+                }
+            }catch (InterruptedException e){
+                --i; //Try again;
+            }catch (ExecutionException e){
+                //Empty on purpose Ignore all Exceptions
+            }
+        }
+
+        if(successfull < _quorumCount) {
+            throw new LibraryOperationException("Failed to retrieve the password!");
+        }
+
+        return responses.get(0);
     }
 
     private int authenticateServer(ServerConnectionInterface server) throws ServerAuthenticationException, RemoteException, HandshakeFailedException, FailedToDecryptException, CertificateException, SignatureException, FailedToRetrieveKeyException{
