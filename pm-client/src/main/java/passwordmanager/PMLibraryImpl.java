@@ -25,15 +25,12 @@ public class PMLibraryImpl implements  PMLibrary{
 
     private ServerConnectionStub pm = null;
 
-    private String privateKeyAlias;
-
 
     public PMLibraryImpl() throws RemoteException {
     }
 
     @Override
     public void init(String keystoreName, String password, String certAlias, String serverAlias, String privKeyAlias) throws RemoteException {
-        privateKeyAlias = privKeyAlias;
         KeyManager km = KeyManager.getInstance(keystoreName, password);//Make sure the keystore has been initialized
         km.setAliases(certAlias, serverAlias, privKeyAlias); //Make sure we are using the correct aliases
         try{
@@ -65,8 +62,6 @@ public class PMLibraryImpl implements  PMLibrary{
         // Register user at server using given certificate
         try{
             pm.register(KeyManager.getInstance().getMyCertificate());
-        }catch(UserAlreadyRegisteredException e){
-            throw new LibraryOperationException("User already registered...");
         }catch (SignatureException | FailedToRetrieveKeyException | CertificateException e){
             throw new LibraryOperationException("Failed to use the local keystore...");
         }
@@ -92,16 +87,8 @@ public class PMLibraryImpl implements  PMLibrary{
 
         }catch(FailedToEncryptException e){
             throw new LibraryOperationException("Failure to encrypt data to sent to server", e);
-        }catch(HandshakeFailedException e){
-            throw new LibraryOperationException("Failure in server handshaking", e);
-        }catch(AuthenticationFailureException e){
-            throw new LibraryOperationException("Message invalid for server", e);
-        }catch(ServerAuthenticationException e){
-            throw new LibraryOperationException("Failure authenticating server", e);
         }catch(FailedToHashException e){
             throw new LibraryOperationException("Failure hashing data...", e);
-        }catch(UserNotRegisteredException e){
-            throw new LibraryOperationException("User is not registered ...", e);
         }catch (SignatureException | FailedToRetrieveKeyException | CertificateException e){
             throw new LibraryOperationException("Failed to use the local keystore...");
         }
@@ -122,7 +109,7 @@ public class PMLibraryImpl implements  PMLibrary{
 
             passwordResponse = pm.get(hashedDomainUsername);
 
-            PrivateKey clientKey = KeyManager.getInstance().getPrivateKey(privateKeyAlias);
+            PrivateKey clientKey = KeyManager.getInstance().getMyPrivateKey();
             return Cryptography.asymmetricDecipher(passwordResponse.password, clientKey);
 
         }catch(HandshakeFailedException e){

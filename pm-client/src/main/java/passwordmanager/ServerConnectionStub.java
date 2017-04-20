@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.*;
 
 /**
  * Created by joao on 4/20/17.
@@ -34,11 +35,19 @@ public class ServerConnectionStub{
 
     private static final int NONCE_SIZE = 4;
 
+    private static Executor _ex;
+
+    private int _serverCount = 1;
+    private int _quorumCount = 0;
+
     ServerConnectionStub(int faults, String keystoreName, String password, String certAlias, String serverAlias, String privKeyAlias)throws RemoteException, FailedToRetrieveKeyException{
-        int serverCount = 3*faults+1;
+        _serverCount = 3*faults+1;
+        _quorumCount = _serverCount; //TODO change this to actual value
+
+        _ex = java.util.concurrent.Executors.newFixedThreadPool(_serverCount);
 
         try {
-            for(int i=1; i<=1; i++) {
+            for(int i=1; i<=_serverCount; i++) {
                 int port = BASE_PORT+i;
                 PMService pms = (PMService) Naming.lookup("rmi://" + "localhost" + ":" + port + "/PMService");
                 _connections.add(pms.connect());
@@ -48,9 +57,13 @@ public class ServerConnectionStub{
         }
     }
 
-    public void register(X509Certificate clientPublicKey) throws RemoteException, UserAlreadyRegisteredException{
-        for(ServerConnectionInterface sc : _connections){
-            sc.register(clientPublicKey);
+    public void register(X509Certificate clientPublicKey){
+        for(ServerConnectionInterface sc : _connections) {
+            try {
+                sc.register(clientPublicKey);
+            } catch (UserAlreadyRegisteredException | RemoteException e){
+                //Empty on purpose
+            }
         }
     }
 
@@ -58,38 +71,76 @@ public class ServerConnectionStub{
         return server.getServerNonce();
     }
 
-    public void put(byte[] domainUsernameHash, byte[] password, X509Certificate clientCert)throws RemoteException, ServerAuthenticationException, HandshakeFailedException, AuthenticationFailureException, UserNotRegisteredException{
-        try {
-            for (ServerConnectionInterface server : _connections) {
-                try {
-                    authenticateServer(server);
-                    PrivateKey clientKey = KeyManager.getInstance().getMyPrivateKey();
-                    byte[] nounce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(getServerNonce(server) + 1).array(), clientKey);
+    public void put(byte[] domainUsernameHash, byte[] password, X509Certificate clientCert)throws LibraryOperationException{
 
-                    byte[] userdata = new byte[domainUsernameHash.length + password.length];
-                    System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
-                    System.arraycopy(password, 0, userdata, domainUsernameHash.length, password.length);
+        class PutTask implements Callable<Exception>{
+            private byte[] _domainUsernameHash;
+            private byte[] _password;
+            private X509Certificate _clientCert;
+            private ServerConnectionInterface _server;
+            PutTask(byte[] duHash, byte[] pwd, X509Certificate cert, ServerConnectionInterface s){
+                _domainUsernameHash = duHash;
+                _password = pwd;
+                _clientCert = cert;
+                _server = s;
+            }
+
+            public Exception call(){
+                try {
+                    authenticateServer(_server);
+                    PrivateKey clientKey = KeyManager.getInstance().getMyPrivateKey();
+                    byte[] nounce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(getServerNonce(_server) + 1).array(), clientKey);
+
+                    byte[] userdata = new byte[_domainUsernameHash.length + _password.length];
+                    System.arraycopy(_domainUsernameHash, 0, userdata, 0, _domainUsernameHash.length);
+                    System.arraycopy(_password, 0, userdata, _domainUsernameHash.length, _password.length);
                     byte[] signature = Cryptography.sign(userdata, clientKey);
 
-                    server.put(nounce, domainUsernameHash, password, clientCert, signature);
-
+                    _server.put(nounce, _domainUsernameHash, _password, _clientCert, signature);
                 }catch (RemoteException |
                         ServerAuthenticationException |
                         HandshakeFailedException |
+                        FailedToDecryptException |
+                        CertificateException |
+                        SignatureException |
+                        FailedToRetrieveKeyException |
+                        NoSuchAlgorithmException |
+                        UnrecoverableEntryException |
+                        KeyStoreException |
+                        FailedToSignException |
+                        FailedToEncryptException |
+                        UserNotRegisteredException |
                         AuthenticationFailureException e){
-                    //TODO handle individual Server failures
+                    return e;
                 }
+                return null;
             }
-        }catch (FailedToDecryptException |
-                NoSuchAlgorithmException |
-                KeyStoreException |
-                FailedToEncryptException |
-                FailedToSignException |
-                SignatureException |
-                CertificateException |
-                FailedToRetrieveKeyException |
-                UnrecoverableEntryException e){
-            throw new ServerAuthenticationException(e.getMessage());
+        };
+
+        CompletionService<Exception> cs = new ExecutorCompletionService<Exception>(_ex);
+        for (ServerConnectionInterface server : _connections) {
+            cs.submit(new PutTask(domainUsernameHash, password, clientCert, server));
+        }
+
+        int successfull = 0;
+
+        for (int i=0; i<_serverCount; i++){
+            if(successfull >= _quorumCount)
+                break;
+            try {
+                Exception e = cs.take().get();
+                if(null == e){
+                    successfull++;
+                }
+            }catch (InterruptedException e){
+                --i; //Try again;
+            }catch (ExecutionException e){
+                //Empty on purpose
+            }
+        }
+
+        if(successfull < _quorumCount) {
+            throw new LibraryOperationException("Failed to store the password!");
         }
     }
 
