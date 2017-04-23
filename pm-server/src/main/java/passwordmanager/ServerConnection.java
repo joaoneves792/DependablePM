@@ -18,8 +18,8 @@ public class ServerConnection extends UnicastRemoteObject implements ServerConne
 	private static final int NONCE_SIZE = 4;
 	private static final String KEYSTORE = "DependablePMServer";
 
-	private int _clientNonce;
-	private int _serverNonce;
+	protected int _clientNonce;
+	protected int _serverNonce;
 
 	private boolean _serverAuthenticationDone;
 

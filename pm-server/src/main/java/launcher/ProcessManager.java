@@ -89,4 +89,38 @@ public class ProcessManager extends UnicastRemoteObject implements ProcessManage
         sleep();
     }
 
+    private void makeProcessByzantine(int i){
+        try {
+            System.out.println("Making process " + i + " byzantine...");
+            _processes.get(i).destroy();
+            _processes.remove(i);
+            sleep();
+            ProcessBuilder pb = new ProcessBuilder(BIN_PATH, _keystorePassword, String.valueOf(i), "true");
+            pb.inheritIO();
+            _processes.put(i, pb.start());
+        }catch (IOException e){
+            System.out.println("FAILED TO START BYZANTINE PROCESS!");
+        }
+    }
+
+    public void makeFByzantine()throws RemoteException{
+        if(_desiredServerCount != _processes.size()){
+            return;
+        }
+        for(int i=1; i<=_faults; i++){
+            makeProcessByzantine(i);
+        }
+        sleep();
+    }
+
+    public void makeFplus1Byzantine()throws RemoteException{
+        if(_desiredServerCount != _processes.size()){
+            return;
+        }
+        for(int i=1; i<=_faults+1; i++){
+            makeProcessByzantine(i);
+        }
+        sleep();
+    }
+
 }

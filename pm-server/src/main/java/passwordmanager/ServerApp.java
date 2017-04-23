@@ -14,6 +14,10 @@ public class ServerApp {
             System.out.println("You have to supply the Keystore password as an argument. Aborting!");
             System.exit(-1);
         }
+        if(args.length < 2){
+            System.out.println("You have to supply an offset for the port (2020+offset). Aborting!");
+            System.exit(-1);
+        }
 
         int registryPort = baseRegistryPort + Integer.parseInt(args[1]);
 
@@ -22,7 +26,12 @@ public class ServerApp {
             //Load the keystore with the password so we dont need to propagate the password
             KeyManager.getInstance(KEYSTORE, args[0]);
 
-            PMService pmService = new PM();
+            PMService pmService;
+            if(args.length > 2 && args[3].equals("true")){
+                pmService = new PM(true);
+            }else {
+                pmService = new PM(false);
+            }
         	Registry reg = LocateRegistry.createRegistry(registryPort);
 			reg.rebind("PMService", pmService);
 
