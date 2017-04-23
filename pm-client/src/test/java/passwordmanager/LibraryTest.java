@@ -78,10 +78,6 @@ public class LibraryTest {
 
     @org.junit.Test
     public void savedPassword() throws RemoteException, LibraryOperationException{
-
-        // Initialize library
-        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
-
         // Save a password
         byte[] domain = RIGHT_DOMAIN.getBytes();
         byte[] password = RIGHT_PASSWORD_TO_STORE.getBytes();
@@ -91,9 +87,6 @@ public class LibraryTest {
 
     @org.junit.Test
     public void retrievePassword() throws RemoteException, LibraryOperationException{
-        // Initialize library
-        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
-
         // Save a password
         byte[] domain = RIGHT_DOMAIN.getBytes();
         byte[] password = RIGHT_PASSWORD_TO_STORE.getBytes();
@@ -111,9 +104,6 @@ public class LibraryTest {
     public void sequentialPasswordWriting() throws RemoteException, LibraryOperationException{
         // The purpose of this test is to write two consequential passwords to the server
         // When we retrieve the password it must be equal to the last inserted password
-
-        // Initialize library
-        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
 
         // Save correctly a password
         byte[] domain = RIGHT_DOMAIN.getBytes();
@@ -140,9 +130,6 @@ public class LibraryTest {
 
     @org.junit.Test(expected = SessionNotInitializedException.class)
     public void sucessfullyCloseSession() throws RemoteException, LibraryOperationException{
-        // Initialize library
-        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
-
         // Close session
         lib.close();
 
@@ -152,9 +139,6 @@ public class LibraryTest {
 
     @org.junit.Test
     public void closeSession() throws RemoteException{
-        // Initialize library
-        lib.init(CLIENT_RIGHT_KEYSTORE, RIGHT_PASSWORD, RIGHT_CERT, RIGHT_SERVERCERT_ALIAS, RIGHT_PRIVATEKEY_ALIAS);
-
         // Close session
         lib.close();
 

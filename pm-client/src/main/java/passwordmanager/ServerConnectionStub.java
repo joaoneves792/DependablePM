@@ -10,6 +10,7 @@ import passwordmanager.exceptions.*;
 
 import java.net.MalformedURLException;
 import java.nio.ByteBuffer;
+import java.rmi.ConnectException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -36,18 +37,24 @@ public class ServerConnectionStub{
 
     ServerConnectionStub(int faults, String keystoreName, String password, String certAlias, String serverAlias, String privKeyAlias)throws RemoteException, FailedToRetrieveKeyException{
         _serverCount = 3*faults+1;
-        _quorumCount = _serverCount; //TODO change this to actual value
+        _quorumCount = ((_serverCount + faults)/2)+1;
 
         _ex = java.util.concurrent.Executors.newFixedThreadPool(_serverCount);
 
-        try {
-            for(int i=1; i<=_serverCount; i++) {
-                int port = BASE_PORT+i;
+        int successfullCount = 0;
+        for(int i=1; i<=_serverCount; i++) {
+            int port = BASE_PORT+i;
+            try {
                 PMService pms = (PMService) Naming.lookup("rmi://" + "localhost" + ":" + port + "/PMService");
                 _connections.add(pms.connect());
+
+                successfullCount++;
+            }catch (MalformedURLException | NotBoundException | ConnectException e){
+                //Do nothing
             }
-        }catch (MalformedURLException | NotBoundException e){
-            throw new RemoteException(e.getMessage(), e);
+        }
+        if(successfullCount < _quorumCount){
+            throw new RemoteException("Not enough servers are available!");
         }
     }
 

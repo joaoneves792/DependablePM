@@ -1,43 +1,31 @@
 package launcher;
 
-import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 
 /**
  * Created by joao on 4/20/17.
  */
-public class ProcessLauncher {
+public class ProcessLauncher{
+    private static final int PORT = 2000;
+    private static final String NAME = "ProcessManager";
 
-    private static final String BIN_PATH = "./target/appassembler/bin/pm-server";
 
     public static void main(String[] args){
         int faults = Integer.parseInt(args[0]);
         String keystorePassword = args[1];
+        try {
+            ProcessManagerInterface pm = new ProcessManager(faults, keystorePassword);
 
-        int serverCount = 3*faults+1;
+            Registry reg = LocateRegistry.createRegistry(PORT);
+            reg.rebind(NAME, pm);
 
-        List<Process> processes = new LinkedList<>();
-
-        try{
-            for(int i = 1; i<= serverCount; i++){
-                ProcessBuilder pb = new ProcessBuilder(BIN_PATH, keystorePassword, String.valueOf(i));
-                pb.inheritIO();
-                processes.add(pb.start());
-            }
-
-            Thread.sleep(1000);
+            pm.launchAll();
             System.out.println("Press ENTER to kill all servers.");
             System.in.read();
-            for(Process p : processes){
-                p.destroy();
-            }
-
-        }catch (IOException | InterruptedException e){
-            System.out.println("Failed to start servers!");
-            for(Process p : processes){
-                p.destroy();
-            }
+            pm.killAll();
+        }catch (Exception e){
+            System.out.println(e.getMessage());
         }
     }
 
