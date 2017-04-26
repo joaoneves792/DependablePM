@@ -115,7 +115,7 @@ public class LibraryTest {
         domain = RIGHT_DOMAIN.getBytes();
         byte[] password2 = RIGHT_PASSWORD_TO_STORE.getBytes();
         username = RIGHT_USERNAME.getBytes();
-        lib.save_password(domain, username, password);
+        lib.save_password(domain, username, password2);
 
         // Get a password
         byte[] receivedPassword = lib.retrieve_password(domain, username);
@@ -123,8 +123,8 @@ public class LibraryTest {
         String passwordSent = new String(password);
         String passwordSent2 = new String(password2);
 
-        assertEquals(passwordSent, passwordReceived);
-        assertNotEquals(passwordSent2, passwordReceived);
+        assertEquals(passwordSent2, passwordReceived);
+        assertNotEquals(passwordSent, passwordReceived);
     }
 
 

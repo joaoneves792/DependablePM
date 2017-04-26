@@ -98,9 +98,12 @@ public class ServerConnectionTest {
         byte[] domainUsernameHash = Cryptography.hash((DOMAIN+USERNAME).getBytes());
         byte[] password = Cryptography.asymmetricCipher(PASSWORD_TO_STORE.getBytes(), clientCert.getPublicKey());
 
-        byte[] userdata = new byte[domainUsernameHash.length+password.length];
+        byte[] ts = ByteBuffer.allocate(Long.SIZE).putLong(0).array();
+
+        byte[] userdata = new byte[domainUsernameHash.length+password.length+ts.length];
         System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
         System.arraycopy(password, 0, userdata, domainUsernameHash.length, password.length);
+        System.arraycopy(ts, 0, userdata, domainUsernameHash.length+password.length, ts.length);
 
         byte[] signature = Cryptography.sign(userdata, clientKey);
 
@@ -111,7 +114,7 @@ public class ServerConnectionTest {
         int decipheredResponse = ByteBuffer.wrap(Cryptography.asymmetricDecipher(response, serverCert.getPublicKey())).getInt();
         assertEquals(myNounce+1, decipheredResponse);
 
-        sc.put(nonce,domainUsernameHash,password,clientCert, signature);
+        sc.put(nonce,domainUsernameHash,password,clientCert, signature, 0);
 
     }
 

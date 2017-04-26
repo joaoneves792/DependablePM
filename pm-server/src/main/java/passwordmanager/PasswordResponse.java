@@ -9,6 +9,7 @@ public class PasswordResponse implements Serializable {
     public final byte[] domainUsernameHash;
     public final byte[] password;
     public final byte[] signature;
+    public final long timestamp;
 
     public final byte[] nonce;
 
@@ -16,6 +17,7 @@ public class PasswordResponse implements Serializable {
         domainUsernameHash = storedPw.get_domainUsernameHash();
         password = storedPw.get_password();
         signature = storedPw.get_signature();
+        timestamp = storedPw.get_timestamp();
 
         nonce = serverResponse;
     }

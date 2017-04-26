@@ -46,13 +46,13 @@ public class PasswordStore {
         return pw;
     }
 
-    public void storePassword(PublicKey pubKey, byte[] domainUsernameHash, byte[] password, byte[] signature)throws UserNotRegisteredException{
+    public void storePassword(PublicKey pubKey, byte[] domainUsernameHash, byte[] password, byte[] signature, long timestamp)throws UserNotRegisteredException{
         UserData userData = _data.get(Cryptography.encodeForStorage(pubKey.getEncoded()));
         if(null == userData){
             throw new UserNotRegisteredException("User with this public key is not yet registered");
         }
 
-        userData.storePassword(domainUsernameHash, password, signature);
+        userData.storePassword(domainUsernameHash, password, signature, timestamp);
     }
 
 

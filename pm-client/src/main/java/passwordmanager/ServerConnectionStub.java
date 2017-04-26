@@ -2,8 +2,7 @@ package passwordmanager;
 
 import Crypto.Cryptography;
 import Crypto.KeyManager;
-import Crypto.exceptions.FailedToDecryptException;
-import Crypto.exceptions.FailedToRetrieveKeyException;
+import Crypto.exceptions.*;
 import passwordmanager.exception.LibraryOperationException;
 import passwordmanager.exception.ServerAuthenticationException;
 import passwordmanager.exceptions.*;
@@ -34,8 +33,12 @@ public class ServerConnectionStub{
 
     private int _serverCount = 1;
     private int _quorumCount = 0;
+    private int _faults = 0;
+
+    private long _timestamp = -1;
 
     ServerConnectionStub(int faults, String keystoreName, String password, String certAlias, String serverAlias, String privKeyAlias)throws RemoteException, FailedToRetrieveKeyException{
+        _faults = faults;
         _serverCount = 3*faults+1;
         _quorumCount = ((_serverCount + faults)/2)+1;
 
@@ -72,18 +75,34 @@ public class ServerConnectionStub{
         return server.getServerNonce();
     }
 
-    public void put(byte[] domainUsernameHash, byte[] password, X509Certificate clientCert)throws LibraryOperationException{
+    public void put(byte[] domainUsernameHash, byte[] password, X509Certificate clientCert)throws RemoteException, LibraryOperationException, HandshakeFailedException, AuthenticationFailureException, UserNotRegisteredException, StorageFailureException{
+        if(_timestamp < 0){
+            try {
+                PasswordResponse pw = get(domainUsernameHash, clientCert);
+                _timestamp = pw.timestamp;
+            }catch (LibraryOperationException e){
+                _timestamp = 1;
+            }
+        }
+        put(domainUsernameHash, password, clientCert, _timestamp);
+
+    }
+
+    public void put(byte[] domainUsernameHash, byte[] password, X509Certificate clientCert, final long timestamp)throws LibraryOperationException{
 
         class PutTask implements Callable<Void>{
             private byte[] _domainUsernameHash;
             private byte[] _password;
             private X509Certificate _clientCert;
+            private long _timestamp;
             private ServerConnectionInterface _server;
-            PutTask(byte[] duHash, byte[] pwd, X509Certificate cert, ServerConnectionInterface s){
+            PutTask(byte[] duHash, byte[] pwd, X509Certificate cert, long times, ServerConnectionInterface s){
                 _domainUsernameHash = duHash;
                 _password = pwd;
                 _clientCert = cert;
+                _timestamp = times;
                 _server = s;
+
             }
 
             public Void call() throws Exception{
@@ -91,22 +110,26 @@ public class ServerConnectionStub{
                 PrivateKey clientKey = KeyManager.getInstance().getMyPrivateKey();
                 byte[] nonce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(getServerNonce(_server) + 1).array(), clientKey);
 
-                byte[] userdata = new byte[_domainUsernameHash.length + _password.length];
+                byte[] ts = ByteBuffer.allocate(Long.SIZE).putLong(_timestamp).array();
+
+                byte[] userdata = new byte[_domainUsernameHash.length + _password.length + ts.length];
                 System.arraycopy(_domainUsernameHash, 0, userdata, 0, _domainUsernameHash.length);
                 System.arraycopy(_password, 0, userdata, _domainUsernameHash.length, _password.length);
+                System.arraycopy(ts, 0, userdata, _domainUsernameHash.length+_password.length, ts.length);
                 byte[] signature = Cryptography.sign(userdata, clientKey);
 
-                _server.put(nonce, _domainUsernameHash, _password, _clientCert, signature);
+                _server.put(nonce, _domainUsernameHash, _password, _clientCert, signature, timestamp);
                 return null;
             }
         };
 
         CompletionService<Void> cs = new ExecutorCompletionService<Void>(_ex);
         for (ServerConnectionInterface server : _connections) {
-            cs.submit(new PutTask(domainUsernameHash, password, clientCert, server));
+            cs.submit(new PutTask(domainUsernameHash, password, clientCert, timestamp, server));
         }
 
         int successfull = 0;
+        int failed = 0;
 
         for (int i=0; i<_serverCount; i++){
             if(successfull >= _quorumCount)
@@ -114,10 +137,11 @@ public class ServerConnectionStub{
             try {
                 cs.take().get();
                 successfull++;
-            }catch (InterruptedException e){
-                --i; //Try again;
-            }catch (ExecutionException e){
-                //Empty on purpose Ignore if this call gave an exception
+            }catch (InterruptedException |
+                    ExecutionException e){
+                if(++failed > _faults){
+                    throw new LibraryOperationException("Failed to store the password!");
+                }
             }
         }
 
@@ -126,9 +150,7 @@ public class ServerConnectionStub{
         }
     }
 
-    public PasswordResponse get(byte[] domainUsernameHash)throws RemoteException, LibraryOperationException, HandshakeFailedException, AuthenticationFailureException, UserNotRegisteredException, PasswordNotFoundException, StorageFailureException{
-        PasswordResponse finalResponse = null;
-
+    public PasswordResponse get(byte[] domainUsernameHash, X509Certificate clientCert)throws RemoteException, LibraryOperationException{
         class GetTask implements Callable<PasswordResponse> {
             private byte[] _domainUsernameHash;
             private ServerConnectionInterface _server;
@@ -153,8 +175,10 @@ public class ServerConnectionStub{
                     PrivateKey clientKey = KeyManager.getInstance().getMyPrivateKey();
                     byte[] signature = Cryptography.sign(userdata, clientKey);
 
+
                     PasswordResponse response;
                     response = _server.get(nounce, KeyManager.getInstance().getMyCertificate(), _domainUsernameHash, signature);
+
 
                     byte[] decipheredNounceByte = Cryptography.asymmetricDecipher(response.nonce, KeyManager.getInstance().getServerCertificate().getPublicKey());
                     int passwordResponseNounce = ByteBuffer.wrap(decipheredNounceByte).getInt();
@@ -170,22 +194,26 @@ public class ServerConnectionStub{
             cs.submit(new GetTask(domainUsernameHash, server));
         }
 
+
         int successfull = 0;
+        int failed = 0;
         List<PasswordResponse> responses = new LinkedList<>();
+
 
         for (int i=0; i<_serverCount; i++){
             if(successfull >= _quorumCount)
                 break;
             try {
                 PasswordResponse r = cs.take().get();
-                if(null != r){
+                if(null != r && verifyPasswordSignature(r)){
                     responses.add(r);
                     successfull++;
                 }
-            }catch (InterruptedException e){
-                --i; //Try again;
-            }catch (ExecutionException e){
-                //Empty on purpose Ignore all Exceptions
+            }catch (InterruptedException |
+                    ExecutionException e){
+                if(++failed > _faults){
+                    throw new LibraryOperationException("Failed to retrieve the password!");
+                }
             }
         }
 
@@ -193,7 +221,16 @@ public class ServerConnectionStub{
             throw new LibraryOperationException("Failed to retrieve the password!");
         }
 
-        return responses.get(0);
+        PasswordResponse finalResponse = null;
+        for(PasswordResponse pw : responses){
+            if(null == finalResponse || pw.timestamp > finalResponse.timestamp){
+                    finalResponse = pw;
+            }
+        }
+
+        put(finalResponse.domainUsernameHash, finalResponse.password, clientCert, finalResponse.timestamp);
+
+        return finalResponse;
     }
 
     private int authenticateServer(ServerConnectionInterface server) throws ServerAuthenticationException, RemoteException, HandshakeFailedException, FailedToDecryptException, CertificateException, SignatureException, FailedToRetrieveKeyException{
@@ -206,4 +243,23 @@ public class ServerConnectionStub{
         return myNounce;
     }
 
+
+    private boolean verifyPasswordSignature(PasswordResponse pw) {
+        try {
+
+            byte[] ts = ByteBuffer.allocate(Long.SIZE).putLong(pw.timestamp).array();
+            byte[] data = new byte[pw.domainUsernameHash.length + pw.password.length + ts.length];
+            System.arraycopy(pw.domainUsernameHash, 0, data, 0, pw.domainUsernameHash.length);
+            System.arraycopy(pw.password, 0, data, pw.domainUsernameHash.length, pw.password.length);
+            System.arraycopy(ts, 0, data, pw.domainUsernameHash.length+pw.password.length, ts.length);
+            Cryptography.verifySignature(data, pw.signature, KeyManager.getInstance().getMyCertificate().getPublicKey());
+            return true;
+        } catch (SignatureException |
+                FailedToVerifySignatureException |
+                InvalidSignatureException |
+                FailedToRetrieveKeyException |
+                CertificateException e) {
+            return false;
+        }
+    }
 }
