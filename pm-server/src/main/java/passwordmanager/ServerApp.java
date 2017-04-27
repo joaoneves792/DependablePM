@@ -27,7 +27,7 @@ public class ServerApp {
             KeyManager.getInstance(KEYSTORE, args[0]);
 
             PMService pmService;
-            if(args.length > 2 && args[3].equals("true")){
+            if(args.length > 2 && args[2].equals("true")){
                 pmService = new PM(true);
             }else {
                 pmService = new PM(false);
@@ -37,7 +37,7 @@ public class ServerApp {
 
             System.out.println("Server ready, Listening on port: " + registryPort);
         }catch(Exception e) {
-            System.out.println("Server: " + e.getMessage());
+            System.out.println("Server: " + e.getMessage() + " " + e.getClass().getCanonicalName());
         }
     }
 }

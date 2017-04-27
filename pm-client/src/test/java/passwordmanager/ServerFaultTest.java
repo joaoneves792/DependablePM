@@ -91,5 +91,51 @@ public class ServerFaultTest {
         assertTrue(caught);
         caught = false;
     }
+
+    @org.junit.Test
+    public void byzantineFTest()throws Exception{
+        processManager.makeFByzantine();
+        libTest.setUp();
+        libTest.savedPassword();
+        libTest.setUp();
+        libTest.retrievePassword();
+        libTest.setUp();
+        libTest.sequentialPasswordWriting();
+    }
+
+    @org.junit.Test
+    public void byzantineFplus1Test()throws Exception{
+        boolean caught = false;
+
+        libTest.setUp();
+        processManager.makeFplus1Byzantine();
+
+        try{
+            libTest.savedPassword();
+        }catch (LibraryOperationException e){
+            //Its expected
+            caught = true;
+        }
+        assertTrue(caught);
+        caught = false;
+
+        try{
+            libTest.retrievePassword();
+        }catch (LibraryOperationException e){
+            //Its expected
+            caught = true;
+        }
+        assertTrue(caught);
+        caught = false;
+
+        try{
+            libTest.sequentialPasswordWriting();
+        }catch (LibraryOperationException e){
+            //Its expected
+            caught = true;
+        }
+        assertTrue(caught);
+        caught = false;
+    }
 }
 

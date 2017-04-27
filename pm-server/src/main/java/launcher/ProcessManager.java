@@ -18,6 +18,7 @@ public class ProcessManager extends UnicastRemoteObject implements ProcessManage
     private int _faults;
     private String _keystorePassword;
     private int _desiredServerCount;
+    private boolean _hasByzantines = false;
     private Map<Integer, Process> _processes = new HashMap<>();
 
     ProcessManager(int faults, String password)throws RemoteException{
@@ -35,10 +36,10 @@ public class ProcessManager extends UnicastRemoteObject implements ProcessManage
     }
 
     public void launchAll()throws RemoteException{
-        if(_desiredServerCount == _processes.size()){
+        if(_desiredServerCount == _processes.size() && !_hasByzantines){
             return;
         }
-        if(_processes.size() < _desiredServerCount && _processes.size() > 0){
+        if((_processes.size() < _desiredServerCount && _processes.size() > 0) || _hasByzantines){
             killAll();
         }
         System.out.println("Launching all processes...");
@@ -54,6 +55,7 @@ public class ProcessManager extends UnicastRemoteObject implements ProcessManage
             System.out.println("Failed to start servers!");
             killAll();
         }
+        _hasByzantines = false;
     }
 
     public void killAll()throws RemoteException{
@@ -104,6 +106,7 @@ public class ProcessManager extends UnicastRemoteObject implements ProcessManage
     }
 
     public void makeFByzantine()throws RemoteException{
+        _hasByzantines = true;
         if(_desiredServerCount != _processes.size()){
             return;
         }
@@ -114,6 +117,7 @@ public class ProcessManager extends UnicastRemoteObject implements ProcessManage
     }
 
     public void makeFplus1Byzantine()throws RemoteException{
+        _hasByzantines = true;
         if(_desiredServerCount != _processes.size()){
             return;
         }
