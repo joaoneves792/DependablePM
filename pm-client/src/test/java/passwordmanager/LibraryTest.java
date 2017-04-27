@@ -31,14 +31,14 @@ public class LibraryTest {
     private static PMLibraryImpl lib;
 
     // RIGHT VALUES
-    private static final String CLIENT_RIGHT_KEYSTORE = "Client1";
-    private static final String RIGHT_PASSWORD = "123456";
-    private static final String RIGHT_CERT = "mycert";
-    private static final String RIGHT_PRIVATEKEY_ALIAS = "mykey";
-    private static final String RIGHT_SERVERCERT_ALIAS = "dependablepmserver";
+    public static final String CLIENT_RIGHT_KEYSTORE = "Client1";
+    public static final String RIGHT_PASSWORD = "123456";
+    public static final String RIGHT_CERT = "mycert";
+    public static final String RIGHT_PRIVATEKEY_ALIAS = "mykey";
+    public static final String RIGHT_SERVERCERT_ALIAS = "dependablepmserver";
     private static final String RIGHT_PASSWORD_TO_STORE = "strongpassword12345";
-    private static final String RIGHT_DOMAIN = "fenix.tecnico.ulisboa.pt";
-    private static final String RIGHT_USERNAME = "ist170666";
+    public static final String RIGHT_DOMAIN = "fenix.tecnico.ulisboa.pt";
+    public static final String RIGHT_USERNAME = "ist170666";
 
     // WRONG VALUES
     private static final String CLIENT_WRONG_KEYSTORE = "Client2";
