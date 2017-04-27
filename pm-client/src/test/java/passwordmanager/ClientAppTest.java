@@ -1,6 +1,7 @@
 package passwordmanager;
 
 import Crypto.Cryptography;
+import launcher.ProcessManagerInterface;
 import passwordmanager.exceptions.AuthenticationFailureException;
 import passwordmanager.exceptions.HandshakeFailedException;
 import passwordmanager.exceptions.UserAlreadyRegisteredException;
@@ -13,6 +14,7 @@ import java.rmi.Naming;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.UUID;
 
 import static org.junit.Assert.*;
 
@@ -34,14 +36,27 @@ public class ClientAppTest {
 
     private static final int NONCE_SIZE = 4;
 
+    private static final int PROCESS_MANAGER_PORT = 2000;
+    private static final String PROCESS_MANAGER_NAME = "ProcessManager";
+
     private X509Certificate clientCert;
     private X509Certificate serverCert;
     private PrivateKey clientKey;
+
+    private long _timestamp = 0;
+
+    private static boolean _reset = false;
 
     private ServerConnectionInterface sc;
 
     @org.junit.Before
     public void setUp() throws Exception {
+        if(!_reset) {
+            ProcessManagerInterface processManager = (ProcessManagerInterface) Naming.lookup("rmi://" + "localhost" + ":" + PROCESS_MANAGER_PORT + "/" + PROCESS_MANAGER_NAME);
+            processManager.killAll();
+            processManager.launchAll();
+            _reset = true;
+        }
         PMService pm = (PMService) Naming.lookup("rmi://" + "localhost" +":"+2021+"/PMService");
 
         KeyStore ks = loadKeystore(CLIENT_KEYSTORE, PASSWORD);
@@ -84,7 +99,7 @@ public class ClientAppTest {
     /*-------------------------------------------------------------------------------------
     START OF POSITIVE TESTING
     -------------------------------------------------------------------------------------*/
-/*
+
     @org.junit.Test
     public void handshake() throws Exception {
         int myNounce = new SecureRandom().nextInt();
@@ -105,9 +120,14 @@ public class ClientAppTest {
         byte[] domainUsernameHash = Cryptography.hash((DOMAIN+USERNAME).getBytes());
         byte[] password = Cryptography.asymmetricCipher(PASSWORD_TO_STORE.getBytes(), clientCert.getPublicKey());
 
-        byte[] userdata = new byte[domainUsernameHash.length+password.length];
+        UUID uuid = UUID.randomUUID();
+        byte[] ts = ByteBuffer.allocate(Long.SIZE).putLong(++_timestamp).array();
+        byte[] id = uuid.toString().getBytes();
+        byte[] userdata = new byte[domainUsernameHash.length+password.length+ts.length+id.length];
         System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
         System.arraycopy(password, 0, userdata, domainUsernameHash.length, password.length);
+        System.arraycopy(ts, 0, userdata, domainUsernameHash.length+password.length, ts.length);
+        System.arraycopy(id, 0, userdata, domainUsernameHash.length+password.length+ts.length, id.length);
 
         byte[] signature = Cryptography.sign(userdata, clientKey);
 
@@ -118,7 +138,7 @@ public class ClientAppTest {
         int decipheredResponse = ByteBuffer.wrap(Cryptography.asymmetricDecipher(response, serverCert.getPublicKey())).getInt();
         assertEquals(myNounce+1, decipheredResponse);
 
-        sc.put(nonce,domainUsernameHash,password,clientCert, signature, 0);
+        sc.put(nonce,domainUsernameHash,password,clientCert, signature, _timestamp, uuid.toString());
     }
 
     @org.junit.Test
@@ -155,9 +175,14 @@ public class ClientAppTest {
         byte[] domainUsernameHash = Cryptography.hash((DOMAIN+USERNAME).getBytes());
         byte[] password = Cryptography.asymmetricCipher(PASSWORD_TO_OVERWRITE.getBytes(), clientCert.getPublicKey());
 
-        byte[] userdata = new byte[domainUsernameHash.length+password.length];
+        UUID uuid = UUID.randomUUID();
+        byte[] ts = ByteBuffer.allocate(Long.SIZE).putLong(++_timestamp).array();
+        byte[] id = uuid.toString().getBytes();
+        byte[] userdata = new byte[domainUsernameHash.length+password.length+ts.length+id.length];
         System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
         System.arraycopy(password, 0, userdata, domainUsernameHash.length, password.length);
+        System.arraycopy(ts, 0, userdata, domainUsernameHash.length+password.length, ts.length);
+        System.arraycopy(id, 0, userdata, domainUsernameHash.length+password.length+ts.length, id.length);
 
         byte[] signature = Cryptography.sign(userdata, clientKey);
 
@@ -168,7 +193,7 @@ public class ClientAppTest {
         int decipheredResponse = ByteBuffer.wrap(Cryptography.asymmetricDecipher(response, serverCert.getPublicKey())).getInt();
         assertEquals(myNounce+1, decipheredResponse);
 
-        sc.put(nonce,domainUsernameHash,password,clientCert, signature, 0);
+        sc.put(nonce,domainUsernameHash,password,clientCert, signature, _timestamp, uuid.toString());
 
         int nonce2 = sc.getServerNonce()+1;
 
@@ -193,21 +218,25 @@ public class ClientAppTest {
     /*-------------------------------------------------------------------------------------
     START OF NEGATIVE TESTING
     -------------------------------------------------------------------------------------*/
-/*
+
     @org.junit.Test(expected = HandshakeFailedException.class)
     public void putNoHandhake()throws Exception{
         byte[] nonce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(sc.getServerNonce()+1).array(), clientKey);
         byte[] domainUsernameHash = Cryptography.hash((DOMAIN+USERNAME).getBytes());
         byte[] password = Cryptography.asymmetricCipher(PASSWORD_TO_STORE.getBytes(), clientCert.getPublicKey());
 
-        byte[] userdata = new byte[domainUsernameHash.length+password.length];
+        UUID uuid = UUID.randomUUID();
+        byte[] ts = ByteBuffer.allocate(Long.SIZE).putLong(++_timestamp).array();
+        byte[] id = uuid.toString().getBytes();
+        byte[] userdata = new byte[domainUsernameHash.length+password.length+ts.length+id.length];
         System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
         System.arraycopy(password, 0, userdata, domainUsernameHash.length, password.length);
-
+        System.arraycopy(ts, 0, userdata, domainUsernameHash.length+password.length, ts.length);
+        System.arraycopy(id, 0, userdata, domainUsernameHash.length+password.length+ts.length, id.length);
         byte[] signature = Cryptography.sign(userdata, clientKey);
 
 
-        sc.put(nonce,domainUsernameHash,password,clientCert, signature, 0);
+        sc.put(nonce,domainUsernameHash,password,clientCert, signature, _timestamp, uuid.toString());
     }
 
     @org.junit.Test(expected = HandshakeFailedException.class)
@@ -233,9 +262,14 @@ public class ClientAppTest {
         byte[] domainUsernameHash = Cryptography.hash((DOMAIN+USERNAME).getBytes());
         byte[] password = Cryptography.asymmetricCipher(PASSWORD_TO_STORE.getBytes(), clientCert.getPublicKey());
 
-        byte[] userdata = new byte[domainUsernameHash.length+password.length];
+        UUID uuid = UUID.randomUUID();
+        byte[] ts = ByteBuffer.allocate(Long.SIZE).putLong(++_timestamp).array();
+        byte[] id = uuid.toString().getBytes();
+        byte[] userdata = new byte[domainUsernameHash.length+password.length+ts.length+id.length];
         System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
         System.arraycopy(password, 0, userdata, domainUsernameHash.length, password.length);
+        System.arraycopy(ts, 0, userdata, domainUsernameHash.length+password.length, ts.length);
+        System.arraycopy(id, 0, userdata, domainUsernameHash.length+password.length+ts.length, id.length);
 
         byte[] signature = Cryptography.sign(userdata, clientKey);
 
@@ -246,7 +280,7 @@ public class ClientAppTest {
         int decipheredResponse = ByteBuffer.wrap(Cryptography.asymmetricDecipher(response, serverCert.getPublicKey())).getInt();
         assertEquals(myNounce+1, decipheredResponse);
 
-        sc.put(nonce,domainUsernameHash,password,clientCert, signature, 0);
+        sc.put(nonce,domainUsernameHash,password,clientCert, signature, _timestamp, uuid.toString());
 
     }
 
@@ -280,9 +314,14 @@ public class ClientAppTest {
         byte[] domainUsernameHash = Cryptography.hash((DOMAIN+USERNAME).getBytes());
         byte[] password = Cryptography.asymmetricCipher(PASSWORD_TO_STORE.getBytes(), clientCert.getPublicKey());
 
-        byte[] userdata = new byte[domainUsernameHash.length+password.length];
+        UUID uuid = UUID.randomUUID();
+        byte[] ts = ByteBuffer.allocate(Long.SIZE).putLong(++_timestamp).array();
+        byte[] id = uuid.toString().getBytes();
+        byte[] userdata = new byte[domainUsernameHash.length+password.length+ts.length+id.length];
         System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
         System.arraycopy(password, 0, userdata, domainUsernameHash.length, password.length);
+        System.arraycopy(ts, 0, userdata, domainUsernameHash.length+password.length, ts.length);
+        System.arraycopy(id, 0, userdata, domainUsernameHash.length+password.length+ts.length, id.length);
 
         byte[] signature = Cryptography.sign(userdata, clientKey);
 
@@ -294,7 +333,7 @@ public class ClientAppTest {
         assertEquals(myNounce+1, decipheredResponse);
 
         nonce[0] = flipBits(nonce[0]);
-        sc.put(nonce,domainUsernameHash,password,clientCert, signature);
+        sc.put(nonce,domainUsernameHash,password,clientCert, signature, _timestamp, uuid.toString());
 
     }
     @org.junit.Test(expected = AuthenticationFailureException.class)
@@ -303,9 +342,14 @@ public class ClientAppTest {
         byte[] domainUsernameHash = Cryptography.hash((DOMAIN+USERNAME).getBytes());
         byte[] password = Cryptography.asymmetricCipher(PASSWORD_TO_STORE.getBytes(), clientCert.getPublicKey());
 
-        byte[] userdata = new byte[domainUsernameHash.length+password.length];
+        UUID uuid = UUID.randomUUID();
+        byte[] ts = ByteBuffer.allocate(Long.SIZE).putLong(++_timestamp).array();
+        byte[] id = uuid.toString().getBytes();
+        byte[] userdata = new byte[domainUsernameHash.length+password.length+ts.length+id.length];
         System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
         System.arraycopy(password, 0, userdata, domainUsernameHash.length, password.length);
+        System.arraycopy(ts, 0, userdata, domainUsernameHash.length+password.length, ts.length);
+        System.arraycopy(id, 0, userdata, domainUsernameHash.length+password.length+ts.length, id.length);
 
         byte[] signature = Cryptography.sign(userdata, clientKey);
 
@@ -317,7 +361,7 @@ public class ClientAppTest {
         assertEquals(myNounce+1, decipheredResponse);
 
         domainUsernameHash[domainUsernameHash.length-domainUsernameHash.length/2] = flipBits(domainUsernameHash[domainUsernameHash.length-domainUsernameHash.length/2]);
-        sc.put(nonce,domainUsernameHash,password,clientCert, signature);
+        sc.put(nonce,domainUsernameHash,password,clientCert, signature, _timestamp, uuid.toString());
     }
 
     @org.junit.Test(expected = AuthenticationFailureException.class)
@@ -326,9 +370,14 @@ public class ClientAppTest {
         byte[] domainUsernameHash = Cryptography.hash((DOMAIN+USERNAME).getBytes());
         byte[] password = Cryptography.asymmetricCipher(PASSWORD_TO_STORE.getBytes(), clientCert.getPublicKey());
 
-        byte[] userdata = new byte[domainUsernameHash.length+password.length];
+        UUID uuid = UUID.randomUUID();
+        byte[] ts = ByteBuffer.allocate(Long.SIZE).putLong(++_timestamp).array();
+        byte[] id = uuid.toString().getBytes();
+        byte[] userdata = new byte[domainUsernameHash.length+password.length+ts.length+id.length];
         System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
         System.arraycopy(password, 0, userdata, domainUsernameHash.length, password.length);
+        System.arraycopy(ts, 0, userdata, domainUsernameHash.length+password.length, ts.length);
+        System.arraycopy(id, 0, userdata, domainUsernameHash.length+password.length+ts.length, id.length);
 
         byte[] signature = Cryptography.sign(userdata, clientKey);
 
@@ -340,7 +389,7 @@ public class ClientAppTest {
         assertEquals(myNounce+1, decipheredResponse);
 
         password[password.length-password.length/2] = flipBits(password[password.length-password.length/2]);
-        sc.put(nonce,domainUsernameHash,password,clientCert, signature);
+        sc.put(nonce,domainUsernameHash,password,clientCert, signature, _timestamp, uuid.toString());
     }
 
     @org.junit.Test(expected = AuthenticationFailureException.class)
@@ -349,9 +398,14 @@ public class ClientAppTest {
         byte[] domainUsernameHash = Cryptography.hash((DOMAIN+USERNAME).getBytes());
         byte[] password = Cryptography.asymmetricCipher(PASSWORD_TO_STORE.getBytes(), clientCert.getPublicKey());
 
-        byte[] userdata = new byte[domainUsernameHash.length+password.length];
+        UUID uuid = UUID.randomUUID();
+        byte[] ts = ByteBuffer.allocate(Long.SIZE).putLong(++_timestamp).array();
+        byte[] id = uuid.toString().getBytes();
+        byte[] userdata = new byte[domainUsernameHash.length+password.length+ts.length+id.length];
         System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
         System.arraycopy(password, 0, userdata, domainUsernameHash.length, password.length);
+        System.arraycopy(ts, 0, userdata, domainUsernameHash.length+password.length, ts.length);
+        System.arraycopy(id, 0, userdata, domainUsernameHash.length+password.length+ts.length, id.length);
 
         byte[] signature = Cryptography.sign(userdata, clientKey);
 
@@ -363,7 +417,7 @@ public class ClientAppTest {
         assertEquals(myNounce+1, decipheredResponse);
 
         signature[signature.length-signature.length/2] = flipBits(signature[signature.length-signature.length/2]);
-        sc.put(nonce,domainUsernameHash,password,clientCert, signature);
+        sc.put(nonce,domainUsernameHash,password,clientCert, signature, _timestamp, uuid.toString());
     }
 
 
@@ -418,5 +472,5 @@ public class ClientAppTest {
         signature[signature.length-signature.length/2] = flipBits(signature[signature.length-signature.length/2]);
         PasswordResponse pw = sc.get(nonce, clientCert, domainUsernameHash, signature);
     }
-*/
+
 }
