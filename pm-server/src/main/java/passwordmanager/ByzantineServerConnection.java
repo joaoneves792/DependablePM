@@ -63,7 +63,7 @@ public class ByzantineServerConnection extends ServerConnection implements Serve
 		rand.nextBytes(randomBuffer);
 		String fakeSignature = Cryptography.encodeForStorage(randomBuffer);
 
-		Password pw = new Password(Cryptography.encodeForStorage(domainUsernameHash), fakePassword, fakeSignature, 0);
+		Password pw = new Password(Cryptography.encodeForStorage(domainUsernameHash), fakePassword, fakeSignature, 0, "");
 
 		return new PasswordResponse(pw, response);
 	}

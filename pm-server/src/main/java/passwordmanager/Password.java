@@ -11,6 +11,7 @@ public class Password {
     private final String _password;
     private final String _signature;
     private final long _timestamp;
+    private final String _uuid;
 
     public byte[] get_domainUsernameHash() {
         return Cryptography.decodeFromStorage(_domainUsernameHash);
@@ -27,11 +28,14 @@ public class Password {
 
     public long get_timestamp(){return _timestamp;}
 
-    Password(String domainUsernameHash, String password, String signature, long timestamp){
+    public String get_uuid(){return _uuid;}
+
+    Password(String domainUsernameHash, String password, String signature, long timestamp, String uuid){
         _domainUsernameHash = domainUsernameHash;
         _password = password;
         _signature = signature;
         _timestamp = timestamp;
+        _uuid = uuid;
     }
 
     public Boolean checkMatch(String domainUsernameHash){

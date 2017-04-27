@@ -10,6 +10,7 @@ public class PasswordResponse implements Serializable {
     public final byte[] password;
     public final byte[] signature;
     public final long timestamp;
+    public final String uuid;
 
     public final byte[] nonce;
 
@@ -18,6 +19,7 @@ public class PasswordResponse implements Serializable {
         password = storedPw.get_password();
         signature = storedPw.get_signature();
         timestamp = storedPw.get_timestamp();
+        uuid = storedPw.get_uuid();
 
         nonce = serverResponse;
     }

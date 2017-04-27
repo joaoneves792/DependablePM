@@ -24,12 +24,15 @@ public class UserData {
         return null;
     }
 
-    public void storePassword(byte[] domainUsernameHash, byte[] password, byte[] signature, long timestamp) {
-        Password pw = new Password(Cryptography.encodeForStorage(domainUsernameHash), Cryptography.encodeForStorage(password), Cryptography.encodeForStorage(signature), timestamp);
+    public void storePassword(byte[] domainUsernameHash, byte[] password, byte[] signature, long timestamp, String uuid) {
+        Password pw = new Password(Cryptography.encodeForStorage(domainUsernameHash), Cryptography.encodeForStorage(password), Cryptography.encodeForStorage(signature), timestamp, uuid);
 
         Password oldPass = getPassword(domainUsernameHash);
         if (null != oldPass) {
             if (pw.get_timestamp() > oldPass.get_timestamp()) {
+                _passwordList.remove(oldPass);
+                _passwordList.add(pw);
+            }else if(pw.get_timestamp() == oldPass.get_timestamp() && (pw.get_uuid().compareTo(oldPass.get_uuid()))>0){
                 _passwordList.remove(oldPass);
                 _passwordList.add(pw);
             }

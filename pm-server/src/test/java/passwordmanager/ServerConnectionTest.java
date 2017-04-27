@@ -11,6 +11,7 @@ import java.nio.ByteBuffer;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.UUID;
 
 import static org.junit.Assert.*;
 
@@ -98,12 +99,16 @@ public class ServerConnectionTest {
         byte[] domainUsernameHash = Cryptography.hash((DOMAIN+USERNAME).getBytes());
         byte[] password = Cryptography.asymmetricCipher(PASSWORD_TO_STORE.getBytes(), clientCert.getPublicKey());
 
-        byte[] ts = ByteBuffer.allocate(Long.SIZE).putLong(0).array();
 
-        byte[] userdata = new byte[domainUsernameHash.length+password.length+ts.length];
+        UUID uuid = UUID.randomUUID();
+        byte[] ts = ByteBuffer.allocate(Long.SIZE).putLong(0).array();
+        byte[] id = uuid.toString().getBytes();
+
+        byte[] userdata = new byte[domainUsernameHash.length+password.length+ts.length+id.length];
         System.arraycopy(domainUsernameHash, 0, userdata, 0, domainUsernameHash.length);
         System.arraycopy(password, 0, userdata, domainUsernameHash.length, password.length);
         System.arraycopy(ts, 0, userdata, domainUsernameHash.length+password.length, ts.length);
+        System.arraycopy(id, 0, userdata, domainUsernameHash.length+password.length+ts.length, id.length);
 
         byte[] signature = Cryptography.sign(userdata, clientKey);
 
@@ -114,7 +119,7 @@ public class ServerConnectionTest {
         int decipheredResponse = ByteBuffer.wrap(Cryptography.asymmetricDecipher(response, serverCert.getPublicKey())).getInt();
         assertEquals(myNounce+1, decipheredResponse);
 
-        sc.put(nonce,domainUsernameHash,password,clientCert, signature, 0);
+        sc.put(nonce,domainUsernameHash,password,clientCert, signature, 0, uuid.toString());
 
     }
 

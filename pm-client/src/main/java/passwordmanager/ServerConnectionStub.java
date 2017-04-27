@@ -18,6 +18,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.*;
 
 /**
@@ -36,6 +37,7 @@ public class ServerConnectionStub{
     private int _faults = 0;
 
     private long _timestamp = -1;
+    UUID _uuid = UUID.randomUUID();
 
     ServerConnectionStub(int faults, String keystoreName, String password, String certAlias, String serverAlias, String privKeyAlias)throws RemoteException, FailedToRetrieveKeyException{
         _faults = faults;
@@ -76,31 +78,31 @@ public class ServerConnectionStub{
     }
 
     public void put(byte[] domainUsernameHash, byte[] password, X509Certificate clientCert)throws RemoteException, LibraryOperationException, HandshakeFailedException, AuthenticationFailureException, UserNotRegisteredException, StorageFailureException{
-        if(_timestamp < 0){
-            try {
-                PasswordResponse pw = get(domainUsernameHash, clientCert);
-                _timestamp = pw.timestamp;
-            }catch (LibraryOperationException e){
-                _timestamp = 1;
-            }
+        try {
+            PasswordResponse pw = get(domainUsernameHash, clientCert);
+            _timestamp = pw.timestamp;
+        }catch (LibraryOperationException e){
+            _timestamp = 1;
         }
-        put(domainUsernameHash, password, clientCert, _timestamp);
+        put(domainUsernameHash, password, clientCert, ++_timestamp, _uuid.toString());
 
     }
 
-    public void put(byte[] domainUsernameHash, byte[] password, X509Certificate clientCert, final long timestamp)throws LibraryOperationException{
+    public void put(byte[] domainUsernameHash, byte[] password, X509Certificate clientCert, long timestamp, String uuid)throws LibraryOperationException{
 
         class PutTask implements Callable<Void>{
             private byte[] _domainUsernameHash;
             private byte[] _password;
             private X509Certificate _clientCert;
             private long _timestamp;
+            private String _uuid;
             private ServerConnectionInterface _server;
-            PutTask(byte[] duHash, byte[] pwd, X509Certificate cert, long times, ServerConnectionInterface s){
+            PutTask(byte[] duHash, byte[] pwd, X509Certificate cert, long times, String id, ServerConnectionInterface s){
                 _domainUsernameHash = duHash;
                 _password = pwd;
                 _clientCert = cert;
                 _timestamp = times;
+                _uuid = id;
                 _server = s;
 
             }
@@ -111,21 +113,23 @@ public class ServerConnectionStub{
                 byte[] nonce = Cryptography.asymmetricCipher(ByteBuffer.allocate(NONCE_SIZE).putInt(getServerNonce(_server) + 1).array(), clientKey);
 
                 byte[] ts = ByteBuffer.allocate(Long.SIZE).putLong(_timestamp).array();
+                byte[] id = _uuid.getBytes();
 
-                byte[] userdata = new byte[_domainUsernameHash.length + _password.length + ts.length];
+                byte[] userdata = new byte[_domainUsernameHash.length + _password.length + ts.length + id.length];
                 System.arraycopy(_domainUsernameHash, 0, userdata, 0, _domainUsernameHash.length);
                 System.arraycopy(_password, 0, userdata, _domainUsernameHash.length, _password.length);
                 System.arraycopy(ts, 0, userdata, _domainUsernameHash.length+_password.length, ts.length);
+                System.arraycopy(id, 0, userdata, _domainUsernameHash.length+_password.length+ts.length, id.length);
                 byte[] signature = Cryptography.sign(userdata, clientKey);
 
-                _server.put(nonce, _domainUsernameHash, _password, _clientCert, signature, timestamp);
+                _server.put(nonce, _domainUsernameHash, _password, _clientCert, signature, _timestamp, _uuid);
                 return null;
             }
         };
 
         CompletionService<Void> cs = new ExecutorCompletionService<Void>(_ex);
         for (ServerConnectionInterface server : _connections) {
-            cs.submit(new PutTask(domainUsernameHash, password, clientCert, timestamp, server));
+            cs.submit(new PutTask(domainUsernameHash, password, clientCert, timestamp, uuid, server));
         }
 
         int successfull = 0;
@@ -227,8 +231,16 @@ public class ServerConnectionStub{
                     finalResponse = pw;
             }
         }
+        /* Use these prints to debug
+        try {
+            PrivateKey clientKey = KeyManager.getInstance().getMyPrivateKey();
+            System.out.println(new String(Cryptography.asymmetricDecipher(finalResponse.password, clientKey)));
+            System.out.println(finalResponse.timestamp);
+            System.out.println(finalResponse.uuid);
 
-        put(finalResponse.domainUsernameHash, finalResponse.password, clientCert, finalResponse.timestamp);
+        }catch (Exception e){}*/
+
+        put(finalResponse.domainUsernameHash, finalResponse.password, clientCert, finalResponse.timestamp, finalResponse.uuid);
 
         return finalResponse;
     }
@@ -248,10 +260,12 @@ public class ServerConnectionStub{
         try {
 
             byte[] ts = ByteBuffer.allocate(Long.SIZE).putLong(pw.timestamp).array();
-            byte[] data = new byte[pw.domainUsernameHash.length + pw.password.length + ts.length];
+            byte[] id = pw.uuid.getBytes();
+            byte[] data = new byte[pw.domainUsernameHash.length + pw.password.length + ts.length + id.length];
             System.arraycopy(pw.domainUsernameHash, 0, data, 0, pw.domainUsernameHash.length);
             System.arraycopy(pw.password, 0, data, pw.domainUsernameHash.length, pw.password.length);
             System.arraycopy(ts, 0, data, pw.domainUsernameHash.length+pw.password.length, ts.length);
+            System.arraycopy(id, 0, data, pw.domainUsernameHash.length+pw.password.length+ts.length, id.length);
             Cryptography.verifySignature(data, pw.signature, KeyManager.getInstance().getMyCertificate().getPublicKey());
             return true;
         } catch (SignatureException |
